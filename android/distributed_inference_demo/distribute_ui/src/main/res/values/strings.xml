@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">LinguaLinked</string>
+    <string name="select_mode_str">Please select the mode of this device.</string>
+    <string name="button_master">Header</string>
+    <string name="button_worker">Worker</string>
+    <string name="button_reset">Reset</string>
+    <string name="cancel">Cancel</string>
+    <string name="next">Next</string>
+    <string name="author_me">me</string>
+    <string name="robot">robot</string>
+    <string name="send">send</string>
+    <string name="textfield_desc">Text input</string>
+    <string name="textfield_hint">Message #composers</string>
+    <string name="attached_image">Attached image</string>
+
+</resources>
