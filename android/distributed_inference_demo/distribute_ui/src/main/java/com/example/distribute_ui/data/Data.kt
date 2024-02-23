@@ -29,7 +29,8 @@ val exampleModelName = listOf(
         "bloom1b7",
         "opt125m",
         "opt350m",
-        "opt1b3"
+        "opt1b3",
+        "vicuna7b-8bit"
 )
 
 val modelMap: HashMap<String, String> = hashMapOf(

@@ -1,3 +1,5 @@
+import socket
+
 import zmq
 import time
 import json
@@ -43,6 +45,7 @@ class Monitor:
         self.runtime_option = runtime_option
         self.record_time = 5
         self.devices = devices
+        self.lock = threading.Lock() # Lock for synchronizing access to shared resources
     
     def get_monitor_info(self):
 
@@ -139,6 +142,7 @@ class Monitor:
                 print(f"monitor msg_content: {msg_content.decode()}")
                 print("monitor message received")
                 print("\n-----------------------------------\n")
+
                 if action.decode() == "MonitorIP":
                     print("monitor waiting for all device to be connected...")
                     self.ip_graph_requested.append(identifier)
@@ -243,6 +247,9 @@ class Monitor:
             # Optionally add any cleanup code you need here
             sys.exit(0)
 
+        socket.close()
+        context.term()
+
     def updateMonitorInfo(self, ip, latency_arr, bandwidth_arr, total_mem, avail_mem, flop):
         index = self.ip_map_id[ip]
         self.latency[index] = latency_arr
@@ -262,7 +269,7 @@ class Monitor:
         print("available memory:")
         print(self.avail_memory)
         print("floop speed:")
-        print(self.flop_speed)     
+        print(self.flop_speed)
 
         self.receive_num += 1
         # record all info
@@ -282,7 +289,7 @@ class Monitor:
                 i = self.ip_map_id[ip["ip"]]
                 self.monitor_info_map[ip["ip"]]["bandwidth"].append(copy.deepcopy(self.bandwidth[i]))
 
-    
+
     def send_monitor_signal(self, tag):
         signal = b"continue" if tag == 1 else b"stop"
         print("send monitor signal to devices")

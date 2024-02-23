@@ -24,7 +24,7 @@ def communication_open_close(sender, config, status, conditions, lock, open=True
     ## Status: Ready, Open, Prepare, Initialized, Start, Running, Finish
     while True:
         print('enter communication open close')
-        with lock:
+        with lock[0]:
             info = sender.recv_multipart()
         client_id = info[0]
         msg = info[1]
@@ -52,9 +52,15 @@ def communication_open_close(sender, config, status, conditions, lock, open=True
 
             status[client_id] = b'Open'
             print(f"Status: Open {config['ids'][client_id]}")
-            ## Prepare
 
-            communication_prepare(sender, config, client_id, status)
+            with conditions[0]:
+                while not check_status(status, config, b"Open"):
+                    conditions[0].wait()
+                conditions[0].notify_all()
+
+            ## Prepare
+            with lock[1]:
+                communication_prepare(sender, config, client_id, status)
 
             print(f"Status: Prepare {config['ids'][client_id]}")
 
@@ -107,7 +113,7 @@ def communication_open_close(sender, config, status, conditions, lock, open=True
             print(f"Close {config['ids'][client_id]}")
             break
 
-def send_model_file(path, sock, client_id, chunked=True, chunk_size=1024*1024):
+def send_model_file(path, sock, client_id, chunked=True, chunk_size=10*1024*1024):
     if not chunked:
         with open(path, 'rb') as f:
             data = f.read()

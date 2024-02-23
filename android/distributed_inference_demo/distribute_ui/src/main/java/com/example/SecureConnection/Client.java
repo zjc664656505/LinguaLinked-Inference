@@ -219,7 +219,7 @@ public class Client {
         Log.d(TAG, "Status: Prepare");
         String skipModelDownload = new String(receiver.recv(0));
         if (skipModelDownload.equals("False")) {  // Skip the model, causing model exists
-            receiveModelFile(param.modelPath + "/module.zip", receiver, chunk, 1024 * 1024);  // chunked 1MB
+            receiveModelFile(param.modelPath + "/module.zip", receiver, chunk, 10 * 1024 * 1024);  // chunked 1MB
             System.out.println("Model Received");
             Log.d(TAG, "Model Received");
 //            if (cfg.isHeader) {

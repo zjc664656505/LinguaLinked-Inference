@@ -32,7 +32,8 @@ available_models = {
     "gpt-j6b": ["EleutherAI/gpt-j-6b", "huggingface_tokenizer"],
     "opt350m": ["facebook/opt-350m", "huggingface_tokenizer"],
     "opt1b3": ["facebook/opt-1.3b", "huggingface_tokenizer"],
-    "opt125m": ["facebook/opt-125m", "huggingface_tokenizer"]
+    "opt125m": ["facebook/opt-125m", "huggingface_tokenizer"],
+    "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"]
 }
 
 
@@ -82,7 +83,12 @@ class ModelCard:
         else:
             model_to_load = self.model_name
         if self.task_type == "Generation":
-            self.model = AutoModelForCausalLM.from_pretrained(model_to_load, low_cpu_mem_usage=True)
+            # TODO: Auto-GPTQ only works on linux and windows -- Junchen Zhao 2/23/2024
+            if model_to_load.startswith("gptq"):
+                if model_to_load.endswith("vicuna-8bit"):
+                    pass
+            else:
+                self.model = AutoModelForCausalLM.from_pretrained(model_to_load, low_cpu_mem_usage=True)
         elif self.task_type == "Classification":
             # Currently, we support only binary classification for running experiments.
             id2label = {0: "NEGATIVE", 1: "POSITIVE"}

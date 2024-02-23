@@ -39,7 +39,6 @@ if __name__ == "__main__":
     ##################################################################################
     ####################### 1. Devices-Server Connection Section #####################
     ##################################################################################
-
     while continue_listening:
         if send.poll(1000):
             print("start listening")
@@ -278,10 +277,11 @@ if __name__ == "__main__":
     threads = []
 
     lock = threading.Lock()
+    locks = [threading.Lock(), threading.Lock()]
     conditions = [threading.Condition() for i in range(len(devices) + 1)]
 
     for i in range(config["num_device"]):
-        t = threading.Thread(target=root_server.communication_open_close, args=(send, config, status, conditions, lock))
+        t = threading.Thread(target=root_server.communication_open_close, args=(send, config, status, conditions, locks))
         threads.append(t)
 
     for i in threads:
