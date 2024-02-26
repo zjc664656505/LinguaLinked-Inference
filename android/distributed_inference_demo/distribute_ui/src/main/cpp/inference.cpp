@@ -12,6 +12,12 @@
 #include <chrono>
 #include "utils.h"
 #include "android/log.h"
+#include <numeric>
+#include <random>
+#include <cmath>
+#include <vector>
+#include <unordered_set>
+#include <algorithm>
 using tokenizers::Tokenizer;
 
 namespace inference{
@@ -100,19 +106,42 @@ namespace inference{
     }
 
     int GreedyDecoding(std::vector<Ort::Value>& probs) {
+        // TOP-k Sampling
         auto probs_shape = probs.front().GetTensorTypeAndShapeInfo().GetShape();
         int dim2 = probs_shape[1];  // sequence length
         int dim3 = probs_shape[2];  // vocabulary size
-
-
         float* tensor_prob = probs.front().GetTensorMutableData<float>();
         int start_index = (dim2 - 1) * dim3;
+        int k = 6;
 
-        // Using std::max_element to find the maximum probability index
+        // Find the top-k probability indices
+        std::vector<std::pair<float, int>> prob_and_index;
         const float* start_ptr = tensor_prob + start_index;
-        const float* end_ptr = start_ptr + dim3;
-        int max_index = std::distance(start_ptr, std::max_element(start_ptr, end_ptr));
-        return max_index;
+        for (int i = 0; i < dim3; ++i) {
+            prob_and_index.emplace_back(start_ptr[i], i);
+        }
+
+        // Sort in descending order of probability
+        std::partial_sort(prob_and_index.begin(), prob_and_index.begin() + k,
+                          prob_and_index.end(), std::greater<std::pair<float, int>>());
+
+        // Create a probability distribution over the top-k elements
+        std::vector<float> top_k_probs;
+        float sum = 0.0f;
+        for (int i = 0; i < k; ++i) {
+            top_k_probs.push_back(prob_and_index[i].first);
+            sum += prob_and_index[i].first;
+        }
+        std::transform(top_k_probs.begin(), top_k_probs.end(), top_k_probs.begin(),
+                       [sum](float prob) { return prob / sum; });
+
+        // Sample an index according to the top-k probability distribution
+        std::discrete_distribution<int> distribution(top_k_probs.begin(), top_k_probs.end());
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        int sampled_index = distribution(generator);
+
+        return prob_and_index[sampled_index].second; // Return the sampled token index
     }
 
     std::vector<Ort::Value> run_inference(SessionCache* sessionCache, std::vector<Ort::Value> &ort_tensors, std::vector<int> &input_ids) {
