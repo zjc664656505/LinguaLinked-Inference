@@ -2,7 +2,10 @@ package com.example.SecureConnection;
 
 import static com.example.distribute_ui.BackgroundService.TAG;
 
+import android.content.Intent;
 import android.util.Log;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -20,6 +23,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.zip.ZipOutputStream;
 
+import org.greenrobot.eventbus.EventBus;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.zeromq.SocketType;
@@ -32,6 +36,8 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipEntry;
 import com.example.SecureConnection.Utils;
+import com.example.distribute_ui.BackgroundService;
+import com.example.distribute_ui.Events;
 
 public class Client {
 
@@ -58,7 +64,6 @@ public class Client {
                 Log.d(TAG, "msg: " + msg);
                 if (msg.equals("Open")) {
                     param.status = "Open";
-                    Log.d(TAG, "Status: Open");
                     System.out.println("Status: Open");
 
                     receiveIPGraph(cfg, receiver);
@@ -104,6 +109,10 @@ public class Client {
                     System.out.println("Status: Running");
                     Log.d(TAG, "Status: Running");
                     param.status = "Running";
+                    if (param.status == "Running") {
+                        // post running events for letting background service know the running status is true
+                        EventBus.getDefault().post(new Events.RunningStatusEvent(true));
+                    }
 
 //                    ZMQ.Poller poller = com.context.createPoller(1);
 //                    poller.register(receiver, ZMQ.Poller.POLLIN);

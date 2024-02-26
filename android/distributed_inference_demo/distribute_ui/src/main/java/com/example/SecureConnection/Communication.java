@@ -31,6 +31,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import org.json.JSONObject;
 import com.example.SecureConnection.Utils.LBPause;
+import com.example.distribute_ui.DataRepository;
+
 import ai.onnxruntime.NodeInfo;
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OnnxValue;
@@ -137,7 +139,6 @@ public class Communication {
         jsonObject.put("ip", currentIP);
         jsonObject.put("role", role);
         if ("header".equals(role)) {
-            Log.d(TAG,"add model to message");
             jsonObject.put("model", modelRequest); // Include the requested model specified by user
         }
         rootSocket.sendMore("RegisterIP");
@@ -147,11 +148,11 @@ public class Communication {
         return need_monitor.equals("True");
     }
 
-    public void runPrepareThread(Boolean model_exist){
+    public void runPrepareThread(){
         executor = Executors.newFixedThreadPool(2);
         executor.submit(()-> {
             try {
-                this.prepare(model_exist);
+                this.prepare();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -172,7 +173,7 @@ public class Communication {
         executor.shutdown();
     }
 
-    public void prepare(Boolean model_exist) throws Exception {
+    public void prepare() throws Exception {
         long startTime = System.nanoTime();
         // Communicate with Root Root Server
         System.out.println(cfg.root);
@@ -369,12 +370,10 @@ public class Communication {
                 }else if (LB_Pause.condition){
                     System.out.println("resampleId " + loadBalance.reSampleId);
                     System.out.println("wait the Process to Finish");
-                    Log.d(TAG,"wait the Process to Finish");
                     System.out.println("Active Thread Count: " + (pool.getActiveCount() + waitingQueue.size()));
                     if ((pool.getActiveCount() + waitingQueue.size()) == 0 && (loadBalance.reSampleId != -1 && sampleId >= loadBalance.reSampleId)) {
                         // Launch re-load when no active process in the pool
                         System.out.println("===================== Load Balance =====================");
-                        Log.d(TAG, "===================== Load Balance =====================");
                         loadBalance.ModifySession();
                         loadBalance.reLoadBalance();
                         Communication.loadBalance.setReSampleId(-1);
@@ -383,6 +382,8 @@ public class Communication {
                 }
 //                Thread.sleep(1000);
             }
+            Log.d(TAG, "****InputId array:" + InputIds.get(0));
+
 
             if (sampleId >= param.numSample) {
 //                int current_permit = latch.availablePermits();
@@ -613,6 +614,10 @@ public class Communication {
                 } else {
                     logits.put(receivedId, res);
                 }
+                // Synchronize the decoded string in data-repo for UI - Junchen
+                String decodedString = decodeID(Utils.convertArrayListToIntArray(
+                        Objects.requireNonNull(InputIds.get(receivedId))), tokenizer);
+                DataRepository.INSTANCE.updateDecodingString(decodedString);
                 System.out.println("No." + receivedId + " Results Obtained");
             }
             return receivedId;

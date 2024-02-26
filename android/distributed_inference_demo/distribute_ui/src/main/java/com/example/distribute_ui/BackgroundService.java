@@ -6,7 +6,11 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.IBinder;
@@ -21,6 +25,10 @@ import com.example.SecureConnection.Communication;
 import com.example.SecureConnection.Config;
 import com.example.SecureConnection.Dataset;
 import com.example.SecureConnection.LoadBalance;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,13 +50,37 @@ public class BackgroundService extends Service {
     private static final String CHANNEL_ID = "MyChannelID";
     public static double[] results;
     public static final String TAG = "Lingual_backend";
-    public static final String ACTION_MODEL_DOWNLOADED = "com.example.distributed_ui.DOWNLOADED";
+    public static final String ACTION_SEND_USER_INPUT = "com.example.distribute_ui.action.SEND_USER_INPUT";
+    public static final String EXTRA_USER_INPUT = "com.example.distribute_ui.extra.USER_INPUT";
+    public static final String ACTION_ENTER_CHAT_SCREEN = "com.example.distribute_ui.action.ENTER_CHAT_SCREEN";
     private String role = "worker";
-    private boolean model_exist = false; // depreciated. Don't need.
     private boolean need_monitor = false;
-
     private boolean running_classification = false;
-    private boolean running_generation = true;
+    private boolean shouldStartInference = false;
+    private boolean runningStatus = false;
+    private boolean messageStatus = false;
+    private boolean enterChatStatus = false;
+    public static boolean isServiceRunning = false;
+
+    private String messageContent = "";
+
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void onRunningStatus(Events.RunningStatusEvent event){
+        runningStatus = event.isRunning;
+        System.out.println("Running Status is: "+runningStatus);
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void onMessageSentEvent(Events.messageSentEvent event) {
+        messageStatus = event.messageSent;
+        messageContent = event.messageContent;
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void onEnterChatEvent(Events.enterChatEvent event) {
+        shouldStartInference = event.enterChat;
+    }
 
     private String getServerIPAddress() {
         String serverIP = "";
@@ -65,9 +97,19 @@ public class BackgroundService extends Service {
         return serverIP;
     }
 
-    @Override
-    public void onCreate(){
-        super.onCreate();
+    private boolean isModelDirectoryEmpty(String modelPath) {
+        File modelDir = new File(modelPath + "/device");
+        if (modelDir.isDirectory()) {
+            String[] files = modelDir.list();
+            return files == null || files.length == 0;
+        }
+        // Return true if it's not a directory, indicating "empty" in this context.
+        return true;
+    }
+
+    private void updateIsDirEmpty(boolean isDirEmpty) {
+        // Update the repository with the new value
+        DataRepository.INSTANCE.setIsDirEmpty(isDirEmpty);
     }
 
     @Override
@@ -96,11 +138,9 @@ public class BackgroundService extends Service {
             Communication com = new Communication(cfg);
             Communication.loadBalance = new LoadBalance(com, cfg);
             com.param.modelPath = getFilesDir() + "";
-            Log.d(TAG, "Model PATH: " +  com.param.modelPath);
 
             // 1. send IP to server to request model
             if (role.equals("header")) {
-                Log.d(TAG, "test Model");
                 need_monitor = com.sendIPToServer(role, finalModelName);
             } else {
                 need_monitor = com.sendIPToServer(role, "");
@@ -115,78 +155,139 @@ public class BackgroundService extends Service {
                 Log.d(TAG, "broadcast sent by backgroundService");
             }
 
-            System.out.println("Model PATH: " +  com.param.modelPath);
+            // 3.1 start downloading required model and tokenizer files from server
+            com.runPrepareThread();
 
-            // 3.1 check whether modelFile already exists, if not we download model from server
-//            File modelFile = new File(com.param.modelPath);
-//            if (modelFile.exists() && modelFile.isFile()){
-//                model_exist = true;
-//            }
+            // 3.2 Check whether the model file exists
+            while (!runningStatus) {
+                try {
+                    Thread.sleep(1000); // Sleep for a short duration to avoid busy waiting
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore the interrupted status
+                    break; // Exit the loop if the thread is interrupted
+                }
+            }
+            boolean isDirEmpty = isModelDirectoryEmpty(com.param.modelPath);
+            if (runningStatus && !isDirEmpty){
+                System.out.println("Prepare is Finished.");
+                if (cfg.isHeader()){
+                    updateIsDirEmpty(isDirEmpty);
+                }
+                System.out.println("Should start the inference: "+shouldStartInference);
+            }
 
-            // 3.2 start downloading required model and tokenizer files from server
-            com.runPrepareThread(model_exist);
-
-            // 4. initiate inference in background service
-            com.param.classes = new String[]{"Negative", "Positive"};
-            Dataset dataset = null;
-
-            while (com.param.numSample <= 0)
-                Thread.sleep(1000);
-
-
-            String [] test_input = new String[com.param.numSample];
+            // 4. Starting from here we need to based on the ACTION_ENTER_CHAT_SCREEN to start inference
             if (cfg.isHeader()) {
-                System.out.println("This is header!");
-                System.out.println(com.param.numSample);
-                int j = 0;
-                while (j < com.param.numSample) {
-                    test_input[j++] = "I hate machine learning, what is";
-                    test_input[j++] = "I don't know machine learning, what is";
-                    test_input[j++] = "I fancy machine learning, what is";
-                    test_input[j++] = "I love java and python, which is";
-                    test_input[j++] = "University of California Irvine is a public university located in";
-                }
-
-                    // 5. option for running inference with dataset. (Experiment use only)
-    //                dataset = new Dataset(getFilesDir() + "/wikitext-2-100.csv", 1, com.param.numSample);   // generation dataset
-    //                if (dataset.texts.size() == 0){
-    //                    System.out.println("No dataset exists, load dataset fail");
-    //                }else {
-    //                    System.out.println("Load dataset successfully, with size " + dataset.texts.size());
-    //                }
-    //                test_input = dataset.texts.subList(0, com.param.numSample).toArray(new String[0]);
-            }
-
-            System.out.println(test_input);
-            System.out.println(com.param.numSample);
-
-            int corePoolSize = 2;
-            int maximumPoolSize = 2;
-            int keepAliveTime = 500;
-
-            try {
-                Log.d(TAG, "communication starts to running");
-                com.running(corePoolSize, maximumPoolSize, keepAliveTime, test_input);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            double startTime = System.nanoTime();
-            results = com.timeUsage;
-
-            if (running_classification) {
-                if (cfg.isHeader()) {
-                    double accuracy = 0.0;
-                    for (int i = 0; i < com.logits.size(); i++) {
-                        int pred = binaryClassify(com.logits.get(i));
-                        int truth = dataset.labels.get(i).equals("positive") ? 1 : 0;
-                        if (pred == truth) {
-                            accuracy += 1;
-                        }
+                while (!shouldStartInference) {
+                    try {
+                        Thread.sleep(1000); // Sleep for a short duration to avoid busy waiting
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt(); // Restore the interrupted status
+                        break; // Exit the loop if the thread is interrupted
                     }
-                    Log.d(TAG, "Task Accuracy: " + (accuracy / com.logits.size()));
                 }
             }
-            Log.d(TAG, "Results Computation Time: " + (System.nanoTime() - startTime)/1000000000.0);
+
+            if (shouldStartInference && cfg.isHeader()){
+                // 4.1 parameters set for classification task
+                com.param.classes = new String[]{"Negative", "Positive"};
+                // 4.2 Dataset would be used if we need conduct evaluation experiment
+                Dataset dataset = null;
+
+                while (com.param.numSample <= 0)
+                    Thread.sleep(1000);
+
+                // 4.3 Create input string array to store user input query. By default, the array size
+                // is set to 1 for testing single-turn chat conversation.
+
+                // 4.4 Based on whether user give input to run the inference
+                String[] test_input = new String[com.param.numSample];
+
+                // 4.4.1 Receive userinput from chatscreen and save it to test_input array
+                while (!messageStatus) {
+                    try {
+                        Thread.sleep(1000); // Sleep for a short duration to avoid busy waiting
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt(); // Restore the interrupted status
+                        break; // Exit the loop if the thread is interrupted
+                    }
+                }
+                final String userinput = messageContent;
+
+                if (cfg.isHeader()) {
+                    int j = 0;
+                    while (j < com.param.numSample) {
+                        test_input[j++] = userinput;
+                    }
+                }
+
+                System.out.println("Background Service: "+test_input);
+                System.out.println(com.param.numSample);
+
+                int corePoolSize = 2;
+                int maximumPoolSize = 2;
+                int keepAliveTime = 500;
+
+                try {
+                    Log.d(TAG, "communication starts to running");
+                    com.running(corePoolSize, maximumPoolSize, keepAliveTime, test_input);
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                double startTime = System.nanoTime();
+                results = com.timeUsage;
+
+                if (running_classification) {
+                    if (cfg.isHeader()) {
+                        double accuracy = 0.0;
+                        for (int i = 0; i < com.logits.size(); i++) {
+                            int pred = binaryClassify(com.logits.get(i));
+                            int truth = dataset.labels.get(i).equals("positive") ? 1 : 0;
+                            if (pred == truth) {
+                                accuracy += 1;
+                            }
+                        }
+                        Log.d(TAG, "Task Accuracy: " + (accuracy / com.logits.size()));
+                    }
+                }
+                Log.d(TAG, "Results Computation Time: " + (System.nanoTime() - startTime) / 1000000000.0);
+                return null;
+            }
+            else if (!shouldStartInference && !cfg.isHeader()){ // running on devices are not header
+                com.param.classes = new String[]{"Negative", "Positive"};
+                Dataset dataset = null;
+                while (com.param.numSample <= 0)
+                    Thread.sleep(1000);
+                String[] test_input = new String[com.param.numSample];
+                int corePoolSize = 2;
+                int maximumPoolSize = 2;
+                int keepAliveTime = 500;
+
+                try {
+                    Log.d(TAG, "communication starts to running");
+                    com.running(corePoolSize, maximumPoolSize, keepAliveTime, test_input);
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                double startTime = System.nanoTime();
+                results = com.timeUsage;
+
+                if (running_classification) {
+                    if (cfg.isHeader()) {
+                        double accuracy = 0.0;
+                        for (int i = 0; i < com.logits.size(); i++) {
+                            int pred = binaryClassify(com.logits.get(i));
+                            int truth = dataset.labels.get(i).equals("positive") ? 1 : 0;
+                            if (pred == truth) {
+                                accuracy += 1;
+                            }
+                        }
+                        Log.d(TAG, "Task Accuracy: " + (accuracy / com.logits.size()));
+                    }
+                }
+                Log.d(TAG, "Results Computation Time: " + (System.nanoTime() - startTime) / 1000000000.0);
+                return null;
+            }
             return null;
         });
 
@@ -226,8 +327,17 @@ public class BackgroundService extends Service {
         return null;
     }
     @Override
-    public void onDestroy(){
+    public void onCreate() {
+        super.onCreate();
+        isServiceRunning = true;
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onDestroy() {
         super.onDestroy();
+        isServiceRunning = false;
+        EventBus.getDefault().unregister(this);
     }
 
     public native int binaryClassify(byte[] data);

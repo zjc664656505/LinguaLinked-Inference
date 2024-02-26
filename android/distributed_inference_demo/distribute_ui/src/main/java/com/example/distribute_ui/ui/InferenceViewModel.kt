@@ -9,6 +9,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.SecureConnection.Communication
 import com.example.SecureConnection.Config
+import com.example.distribute_ui.DataRepository
 import com.example.distribute_ui.TAG
 import com.example.distribute_ui.data.modelMap
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +28,7 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
     private var filesDirPath : String = ""
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
-
+    val isDirEmpty: LiveData<Boolean> = DataRepository.isDirEmptyLiveData
 //    private val _IPState = MutableStateFlow(false)
 //    val IPState: StateFlow<Boolean> get() = _IPState
 
@@ -121,6 +122,8 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+
+    // This function is depreciated
     fun inferenceExecution(content : String) {
         Log.d(TAG, "Enter inferenceExecution")
         this.testInput = content
@@ -182,7 +185,7 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
                 com!!.param.modelPath = "$filesDirPath/module.onnx"
                 try {
                     Log.d(TAG, "start prepare")
-                    com!!.prepare(true)
+                    com!!.prepare()
                 } catch (e: IOException) {
                     throw RuntimeException(e)
                 }

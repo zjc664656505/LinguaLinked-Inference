@@ -83,10 +83,11 @@ dependencies {
     implementation 'junit:junit:4.12'
     implementation 'androidx.test:monitor:1.5.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-
+    implementation 'org.greenrobot:eventbus:3.2.0'
     implementation 'com.microsoft.onnxruntime:onnxruntime-android:latest.release'
     implementation 'com.microsoft.onnxruntime:onnxruntime-extensions-android:latest.release'
     implementation 'org.zeromq:jeromq:0.5.3'
     implementation 'com.opencsv:opencsv:5.5.2'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+    implementation "androidx.compose.runtime:runtime-livedata"
 }

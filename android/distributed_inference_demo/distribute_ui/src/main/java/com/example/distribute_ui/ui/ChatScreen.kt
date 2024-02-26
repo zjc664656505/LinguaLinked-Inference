@@ -1,6 +1,7 @@
 package com.example.distribute_ui.ui
-
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,24 +36,35 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LastBaseline
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.distribute_ui.BackgroundService
+import com.example.distribute_ui.DataRepository
 import com.example.distribute_ui.R
 import com.example.distribute_ui.TAG
 import com.example.distribute_ui.data.initialMessages
 import com.example.distribute_ui.ui.components.UserInput
 import com.example.distribute_ui.ui.theme.Distributed_inference_demoTheme
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import com.example.distribute_ui.Events
+
 
 const val ConversationTestTag = "ConversationTestTag"
 
@@ -61,7 +73,11 @@ const val ConversationTestTag = "ConversationTestTag"
  * @param navigateToModelSelection User action when navigation to previous model selection
  * @param modifier [Modifier] to apply to this layout node
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
+
+
+
 @Composable
 fun ChatScreen(
     viewModel: InferenceViewModel,
@@ -69,15 +85,22 @@ fun ChatScreen(
 ) {
     val authorMe = stringResource(R.string.author_me)
 
-    // need to change to real time
-    val timeNow = "03:07 pm"
-
+    val currentTimeMillis = System.currentTimeMillis()
+    // Convert milliseconds since the epoch to an Instant
+    val instant = Instant.ofEpochMilli(currentTimeMillis)
+    // Format the Instant as a String
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
+    val formatted = formatter.format(instant)
+    val timeNow = formatted
+    val context = LocalContext.current
     val scrollState = rememberLazyListState()
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
     val scope = rememberCoroutineScope()
-
     val uiState = viewModel.uiState.collectAsState()
+
+    // observe model response
+    val decodedString by DataRepository.decodingStringLiveData.observeAsState("")
 
     Scaffold(
         topBar = {
@@ -90,9 +113,9 @@ fun ChatScreen(
                             text = uiState.value.modelName,
                             style = MaterialTheme.typography.titleMedium
                         )
-                        // Number of Devices
+                        // Show greeting text
                         Text(
-                            text = "Connected Devices: ${uiState.value.connectedDevices}",
+                            text = "Welcome to LinguaLinked Chat.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -114,22 +137,18 @@ fun ChatScreen(
         ) {
             Messages(
                 messages = uiState.value.messages,
-//                messages = initialMessages,
+                decodedString = decodedString,
                 modifier = Modifier.weight(1f),
                 scrollState = scrollState
             )
             UserInput(
                 onClicked = {
-//                    viewModel.inferenceExecution()
-//                    viewModel.testInference()
                 },
                 onMessageSent = { content ->
                     viewModel.addMessage(
                         Message(authorMe, content, timeNow)
                     )
-                    viewModel.inferenceExecution(content)
-//                    viewModel.inferenceExecution()
-
+                    EventBus.getDefault().post(Events.messageSentEvent(true, content))
                 },
                 resetScroll = {
                     scope.launch {
@@ -145,7 +164,6 @@ fun ChatScreen(
                     .imePadding()
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
-
             )
         }
     }
@@ -166,48 +184,38 @@ fun ChatBar(
 @Composable
 fun Messages(
     messages: List<Message>,
+    decodedString: String, // Correct parameter name to match Kotlin conventions
     scrollState: LazyListState,
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
-    val authorMe = stringResource(id = R.string.author_me)
     Box(modifier = modifier) {
         LazyColumn(
-            reverseLayout = true,
             state = scrollState,
-            modifier = Modifier
-                .testTag(ConversationTestTag)
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
-            for (index in messages.indices) {
-//                val prevAuthor = messages.getOrNull(index - 1)?.author
-//                val nextAuthor = messages.getOrNull(index + 1)?.author
-                val content = messages[index]
-                Log.d(TAG, "content is $content")
-//                val isFirstMessageByAuthor = prevAuthor != content.author
-//                val isLastMessageByAuthor = nextAuthor != content.author
-//
-//                // Hardcode day dividers for simplicity
-//                if (index == messages.size - 1) {
-//                    item {
-//                        DayHeader("20 Aug")
-//                    }
-//                } else if (index == 2) {
-//                    item {
-//                        DayHeader("Today")
-//                    }
-//                }
+            items(messages.size) { index ->
+                val message = messages[index]
+                Message(
+                    msg = message,
+                    isUserMe = message.author == "Me" // Assuming the author "Me" represents the user
+                )
+            }
 
+            // Check if decodedString is not empty and display it
+            if (decodedString.isNotEmpty()) {
                 item {
+                    // Display decodedString in a single message box
+                    // Assuming the model is represented as "Model"
                     Message(
-                        msg = content,
-                        isUserMe = content.author == authorMe,
+                        msg = Message(author = "LinguaLinked", content = decodedString, timestamp = "Now"),
+                        isUserMe = false // Model messages are not from the user
                     )
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun Message(
@@ -241,7 +249,7 @@ fun Message(
         }
         Text(
             text = msg.content,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodyMedium
         )
     }
 
@@ -372,6 +380,6 @@ fun ConversationPreview() {
 @Composable
 fun MessagesPreview() {
     Distributed_inference_demoTheme {
-        Messages(messages = initialMessages, scrollState = rememberLazyListState())
+        Messages(messages = initialMessages, decodedString="example model response", scrollState = rememberLazyListState())
     }
 }

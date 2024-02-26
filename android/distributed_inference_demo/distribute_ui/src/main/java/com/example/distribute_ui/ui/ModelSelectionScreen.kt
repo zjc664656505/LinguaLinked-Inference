@@ -1,5 +1,10 @@
 package com.example.distribute_ui.ui
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,13 +28,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.example.distribute_ui.BackgroundService
+import com.example.distribute_ui.Events
 import com.example.distribute_ui.R
 import com.example.distribute_ui.TAG
 import com.example.distribute_ui.ui.components.ButtonBar
 import com.example.distribute_ui.ui.theme.Distributed_inference_demoTheme
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
+import androidx.compose.runtime.livedata.observeAsState
 
 @Composable
 fun ModelSelectionScreen(
@@ -43,8 +57,9 @@ fun ModelSelectionScreen(
     var selectedModel by remember { mutableStateOf("") }
     var selectedValue = remember { mutableStateOf(false) }
     val nextClickedState = remember { mutableStateOf(false) }
-//    val ipState by viewModel.IPState.collectAsState()
     val prepareState by viewModel.prepareState.collectAsState()
+    val context = LocalContext.current
+    val isDirEmpty by viewModel.isDirEmpty.observeAsState(initial = true)
 
     Column(
         modifier = modifier,
@@ -80,7 +95,7 @@ fun ModelSelectionScreen(
                 modifier = Modifier.padding(bottom = dimensionResource(R.dimen.padding_medium))
             )
             Text(
-                text = "Number of connected devices: 5",
+                text = "Please select your model for execution.",
                 textAlign = TextAlign.Left,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -89,12 +104,6 @@ fun ModelSelectionScreen(
             modifier = modifier,
             onNextClicked = {
                 nextClickedState.value = true
-//                viewModel.selectModel(selectedModel)
-//                onNextClicked()
-//                viewModel.updateDeviceInfo()
-//                viewModel.inferencePrepare()
-
-//                onNextClicked(selectedModel)
             },
             onCancelClicked = {
                 nextClickedState.value = false
@@ -104,47 +113,40 @@ fun ModelSelectionScreen(
             selectedValue = selectedValue.value
         )
         if (nextClickedState.value && selectedValue.value) {
-
+            Log.d(TAG, "Model Directory Path is Empty: " + isDirEmpty)
+            onBackendStarted()
             HeaderProgressDialog(
+                isEnabled = !isDirEmpty,
                 onClicked = {
-
-//                    viewModel.inferencePrepare()
-//                    viewModel.testPrepareState()
+                    EventBus.getDefault().post(Events.enterChatEvent(true))
+                    onNextClicked() // Enter the chatscreen
                 }
             )
-            onBackendStarted()
         }
-//        if (prepareState) {
-//            LaunchedEffect(prepareState) {
-//                onNextClicked()
-//                viewModel.resetPrepareState()
-//                val time = System.currentTimeMillis()
-//                Log.d(TAG, "time after onNextClicked in model selection is $time")
-//            }
-//        }
     }
 }
 
 @Composable
 fun HeaderProgressDialog(
-
+    isEnabled: Boolean,
     onClicked: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = {},
         text = {
-            Text(text = "The header starts downloading, please wait until the start button is ready.")
+            Text(text = "Preparing inference resources, please wait until the start button is ready.")
         },
         confirmButton = {
             Button(
-                enabled = true,
+                enabled = isEnabled,  // Control the enabled state of the button
                 onClick = onClicked
             ) {
-                Text(text = "start")
+                Text(text = "Start")
             }
         }
     )
 }
+
 
 @Preview
 @Composable
