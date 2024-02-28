@@ -253,7 +253,7 @@ public class Communication {
         }
     }
 
-    public void inferenceProcedure(int id) throws JSONException {
+    public void inferenceProcedure(int id, int current_gen_len) throws JSONException {
         if (((InputData.containsKey(id) && InputData.get(id) != null)) || (this.InputIds.get(id)) != null) {
             System.out.println("Obtain data");
             if (sessions.size() != 0) {
@@ -277,9 +277,23 @@ public class Communication {
                     for (int i = 0;  i< sessions.size(); i++){
                         if (i == sessions.size() - 1) {
                             if (i == 0)
-                                res = runInferenceWorkerResidualLastGeneration(sessions.get(i), InputData.get(id),mergeResFromAndToDevice(id, sessionIndex[i]));
+                                res = runInferenceWorkerResidualLastGeneration(sessions.get(i),
+                                        InputData.get(id),
+                                        mergeResFromAndToDevice(id, sessionIndex[i]),
+                                        cfg.k,
+                                        cfg.initial_temp,
+                                        cfg.final_temp,
+                                        param.max_length,
+                                        current_gen_len);
                             else
-                                res = runInferenceWorkerResidualLastGeneration(sessions.get(i), OutputData.get(id),mergeResFromAndToDevice(id, sessionIndex[i]));
+                                res = runInferenceWorkerResidualLastGeneration(sessions.get(i),
+                                        OutputData.get(id),
+                                        mergeResFromAndToDevice(id, sessionIndex[i]),
+                                        cfg.k,
+                                        cfg.initial_temp,
+                                        cfg.final_temp,
+                                        param.max_length,
+                                        current_gen_len);
                             OutputData.put(id, res);
                             break;
                         }else if (i == 0) {
@@ -478,7 +492,7 @@ public class Communication {
                 System.out.println("++++++++++++SampleID: " + sample_id);
                 int receivedId = 0;
                 try {
-                    receivedId = new OneStep(this.sample_id, serverSocket, clientSocket).run();
+                    receivedId = new OneStep(this.sample_id, serverSocket, clientSocket, 1).run();
                 } catch (InterruptedException | JSONException e) {
                     throw new RuntimeException(e);
                 }
@@ -489,7 +503,7 @@ public class Communication {
                     long startTime = System.nanoTime();
                     System.out.println("++++++++++++SampleID: " + sample_id + "++++++++++TokenID:" + m);
                     try {
-                        int receivedId = new OneStep(this.sample_id, serverSocket, clientSocket).run();
+                        int receivedId = new OneStep(this.sample_id, serverSocket, clientSocket, m).run();
                     } catch (InterruptedException | JSONException e) {
                         throw new RuntimeException(e);
                     }
@@ -522,12 +536,15 @@ public class Communication {
         private final Socket  clientSocket;
         private final int sample_id;
 
-        public OneStep(int sample_id, Map<Integer, Socket> serverSide, Map<Integer, Socket>  clientSide) {
+        private int current_token_index;
+
+        public OneStep(int sample_id, Map<Integer, Socket> serverSide, Map<Integer, Socket>  clientSide, int current_token_index) {
             this.sample_id = sample_id;
             this.serverSocketMap = serverSide;
             this.clientSocketMap = clientSide;
             this.serverSocket = serverSide.get(cfg.prevDeviceId());
             this.clientSocket = clientSide.get(cfg.nextDeviceId());
+            this.current_token_index = current_token_index;
         }
 
         public int procssingAsClient(int receivedId) throws InterruptedException {
@@ -632,7 +649,7 @@ public class Communication {
             System.out.println("No." + receivedId + " Part1 Process Time: " + (System.nanoTime() - startTime) / 1000000000.0);
 
             startTime = System.nanoTime();
-            inferenceProcedure(receivedId);
+            inferenceProcedure(receivedId, this.current_token_index);
 
             System.out.println("No." + receivedId + " Part2 Process Time: " + (System.nanoTime() - startTime) / 1000000000.0);
 
@@ -885,11 +902,22 @@ public class Communication {
     public native Object runInferenceWorkerResidual(long session,  byte[] sequential_input, ArrayList<byte[]> residual_input, int[] to_send_seq_indices, int[][] to_send_res_indices);
     public native byte[] runInferenceWorkerResidualLast(long session, byte[] sequential_input, ArrayList<byte[]>  residual_input);
 
-    public native byte[] runInferenceWorkerResidualLastGeneration(long session, byte[] sequential_input, ArrayList<byte[]>  residual_input);
+    public native byte[] runInferenceWorkerResidualLastGeneration(long session,
+                                                                  byte[] sequential_input,
+                                                                  ArrayList<byte[]>  residual_input,
+                                                                  int k,
+                                                                  float init_temp,
+                                                                  float final_temp,
+                                                                  int max_len,
+                                                                  int current_gen);
 
     public native byte[] runInferenceWorkerResidualLastClassification(long session, byte[] sequential_input, ArrayList<byte[]>  residual_input);
 
     public native int deserializeInt(byte[] decode_id);
+
+    public native int TokenToID(String token, long tokenizer);
+
+    public native boolean EosCheck(byte[] output, long tokenizer); // TODO: adding EOS string check for generation early stopping - Junchen 02/28/2024
 
 //    public native OnnxValue[] DeserializeTensor(byte[] data);
 

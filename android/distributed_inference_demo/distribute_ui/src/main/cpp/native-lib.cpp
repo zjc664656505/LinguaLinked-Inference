@@ -10,6 +10,7 @@
 #include "tokenizers_cpp.h"
 #include "iostream"
 #include "android/log.h"
+#include <string>
 
 using tokenizers::Tokenizer;
 extern "C" JNIEXPORT jlong JNICALL
@@ -1336,14 +1337,25 @@ Java_com_example_SecureConnection_Communication_runInferenceWorkerResidualLastCl
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_example_SecureConnection_Communication_runInferenceWorkerResidualLastGeneration(
         JNIEnv *env, jobject /* this */,
-        jlong session, jbyteArray sequential_input,
-        jobject residual_input
+        jlong session,
+        jbyteArray sequential_input,
+        jobject residual_input,
+        jint k,
+        jfloat init_temp,
+        jfloat final_temp,
+        jint max_len,
+        jint current_gen
 ){
     auto* session_cache = reinterpret_cast<SessionCache *>(session);
     std::vector<Ort::Value> ort_tensors;
     std::vector<Ort::Value> sequential_tensors;
     std::vector<Ort::Value> residual_tensors;
     std::vector<int> input_ids;
+    int top_k = k;
+    float initial_temp = init_temp;
+    float fin_temp = final_temp;
+    int m_len = max_len;
+    int c_len = current_gen;
 
     jint sequential_length = env->GetArrayLength(sequential_input);
     if (sequential_length > 0) {
@@ -1383,7 +1395,16 @@ Java_com_example_SecureConnection_Communication_runInferenceWorkerResidualLastGe
         ort_tensors = std::move(sequential_tensors);
     }
 
-    auto result = inference::run_inference_with_decoding(session_cache, ort_tensors, input_ids, 1);
+    auto result = inference::run_inference_with_decoding(session_cache,
+                                                         ort_tensors,
+                                                         input_ids,
+                                                         top_k,
+                                                         initial_temp,
+                                                         fin_temp,
+                                                         m_len,
+                                                         c_len,
+                                                         1);
+
     std::vector<char> bytes = utils::SerializeInt(result);
 
     jbyteArray serialized_tensor_vector = env->NewByteArray(bytes.size());
@@ -1422,6 +1443,30 @@ Java_com_example_SecureConnection_Communication_deserializeInt(JNIEnv *env, jobj
         }
     }
     return resultInt;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_SecureConnection_Communication_TokenToID(JNIEnv *env, jobject thiz,
+        jstring token, jlong tokenizer){
+    const char* rawString = env->GetStringUTFChars(token, nullptr);
+    std::string cppString(rawString);
+    auto tokenizer_ptr = reinterpret_cast<Tokenizer*>(tokenizer);
+    env->ReleaseStringUTFChars(token, rawString);
+    return tokenizer_ptr->TokenToId(cppString);
+
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_example_SecureConnection_Communication_EosCheck(JNIEnv *env, jobject thiz,
+                                                          jbyteArray output, jlong tokenizer){
+    jsize length = env->GetArrayLength(output);
+    jbyte* bytes = env->GetByteArrayElements(output, NULL);
+    int value;
+    memcpy(&value, bytes, sizeof(value));
+    auto tokenizer_ptr = reinterpret_cast<Tokenizer*>(tokenizer);
+    return tokenizer_ptr->TokenToId("</s>") == value;
 }
 
 

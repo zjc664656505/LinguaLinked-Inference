@@ -134,7 +134,12 @@ public class BackgroundService extends Service {
         String finalModelName = modelName;
         executor.submit(() -> {
             String server_ip = getServerIPAddress();
-            Config cfg = new Config(server_ip, 23456); // set server ip and port
+
+            // k is parameter for top-k
+            // initial_temp is the parameter for temperature.
+            // dynamic temp adjustment is disabled for now by setting final_temp to 0.
+            Config cfg = new Config(server_ip, 23456, 5, .7f, 0.0f);
+
             Communication com = new Communication(cfg);
             Communication.loadBalance = new LoadBalance(com, cfg);
             com.param.modelPath = getFilesDir() + "";
@@ -269,23 +274,7 @@ public class BackgroundService extends Service {
                 } catch (IOException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                double startTime = System.nanoTime();
                 results = com.timeUsage;
-
-                if (running_classification) {
-                    if (cfg.isHeader()) {
-                        double accuracy = 0.0;
-                        for (int i = 0; i < com.logits.size(); i++) {
-                            int pred = binaryClassify(com.logits.get(i));
-                            int truth = dataset.labels.get(i).equals("positive") ? 1 : 0;
-                            if (pred == truth) {
-                                accuracy += 1;
-                            }
-                        }
-                        Log.d(TAG, "Task Accuracy: " + (accuracy / com.logits.size()));
-                    }
-                }
-                Log.d(TAG, "Results Computation Time: " + (System.nanoTime() - startTime) / 1000000000.0);
                 return null;
             }
             return null;

@@ -255,7 +255,7 @@ public class Client {
         Communication.sessions.add(createSession(param.modelPath + "/device/module.onnx"));
         System.out.println("create session finished");
 
-        if (cfg.isHeader()) {
+        if (cfg.isHeader() || cfg.isTailer()) {
             Communication.tokenizer = createHuggingFaceTokenizer(param.modelPath + "/device/tokenizer.json");
             // OR SENTENCEPIECE LATER
             System.out.println("Tokenizer created");

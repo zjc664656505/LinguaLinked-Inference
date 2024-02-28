@@ -9,6 +9,7 @@ pub struct TokenizerWrapper {
     tokenizer: Tokenizer,
     encode_ids: Vec<u32>,
     decode_str: String,
+    id_to_token_result: String,
 }
 
 pub type Vocab = HashMap<String, u32>;
@@ -20,6 +21,7 @@ impl TokenizerWrapper {
             tokenizer: Tokenizer::from_str(json).unwrap().into(),
             encode_ids: Vec::new(),
             decode_str: String::new(),
+            id_to_token_result: String::new(),
         }
     }
 
@@ -77,20 +79,18 @@ impl TokenizerWrapper {
             tokenizer: tokenizer,
             encode_ids: Vec::new(),
             decode_str: String::new(),
+            id_to_token_result: String::new(),
         }
     }
 
     pub fn encode(&mut self, text: &str, add_special_tokens: bool) {
-        self.encode_ids = Vec::from(
-            self.tokenizer
-                .encode(text, add_special_tokens)
-                .unwrap()
-                .get_ids(),
-        );
+        let encoded = self.tokenizer.encode(text, add_special_tokens).unwrap();
+        self.encode_ids.resize(encoded.len(), 0);
+        self.encode_ids.copy_from_slice(encoded.get_ids());
     }
 
-    pub fn decode(&mut self, ids: Vec<u32>, skip_special_tokens: bool) {
-        self.decode_str = self.tokenizer.decode(&ids, skip_special_tokens).unwrap();
+    pub fn decode(&mut self, ids: &[u32], skip_special_tokens: bool) {
+        self.decode_str = self.tokenizer.decode(ids, skip_special_tokens).unwrap();
     }
 }
 
@@ -162,7 +162,7 @@ extern "C" fn tokenizers_decode(
     skip_special_tokens: i32,
 ) {
     unsafe {
-        let input_data = Vec::from(std::slice::from_raw_parts(input_ids, len));
+        let input_data = std::slice::from_raw_parts(input_ids, len);
         (*handle).decode(input_data, skip_special_tokens != 0);
     }
 }
@@ -183,5 +183,48 @@ extern "C" fn tokenizers_get_decode_str(
 extern "C" fn tokenizers_free(wrapper: *mut TokenizerWrapper) {
     unsafe {
         drop(Box::from_raw(wrapper));
+    }
+}
+
+#[no_mangle]
+extern "C" fn tokenizers_get_vocab_size(handle: *mut TokenizerWrapper, size: *mut usize) {
+    unsafe {
+        *size = (*handle).tokenizer.get_vocab_size(true);
+    }
+}
+
+#[no_mangle]
+extern "C" fn tokenizers_id_to_token(
+    handle: *mut TokenizerWrapper,
+    id: u32,
+    out_cstr: *mut *mut u8,
+    out_len: *mut usize,
+) {
+    unsafe {
+        let str = (*handle).tokenizer.id_to_token(id);
+        (*handle).id_to_token_result = match str {
+            Some(s) => s,
+            None => String::from(""),
+        };
+
+        *out_cstr = (*handle).id_to_token_result.as_mut_ptr();
+        *out_len = (*handle).id_to_token_result.len();
+    }
+}
+
+#[no_mangle]
+extern "C" fn tokenizers_token_to_id(
+    handle: *mut TokenizerWrapper,
+    token: *const u8,
+    len: usize,
+    out_id: *mut i32,
+) {
+    unsafe {
+        let token: &str = std::str::from_utf8(std::slice::from_raw_parts(token, len)).unwrap();
+        let id = (*handle).tokenizer.token_to_id(token);
+        *out_id = match id {
+            Some(id) => id as i32,
+            None => -1,
+        };
     }
 }

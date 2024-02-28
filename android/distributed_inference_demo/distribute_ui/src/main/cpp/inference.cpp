@@ -18,6 +18,7 @@
 #include <vector>
 #include <unordered_set>
 #include <algorithm>
+#include "decoding.h"
 using tokenizers::Tokenizer;
 
 namespace inference{
@@ -66,8 +67,6 @@ namespace inference{
         }
         return idx_max;
     }
-
-
 
     void PrintEncodeResult(const std::vector<int>& ids) {
         std::cout << "tokens=[";
@@ -140,7 +139,6 @@ namespace inference{
         std::random_device rd;
         std::mt19937 generator(rd());
         int sampled_index = distribution(generator);
-
         return prob_and_index[sampled_index].second; // Return the sampled token index
     }
 
@@ -271,7 +269,15 @@ namespace inference{
         }
     }
 
-    int run_inference_with_decoding(SessionCache* sessionCache, std::vector<Ort::Value> &ort_tensors, std::vector<int> &input_ids, int decoding) {
+    int run_inference_with_decoding(SessionCache* sessionCache,
+                                    std::vector<Ort::Value> &ort_tensors,
+                                    std::vector<int> &input_ids,
+                                    int k,
+                                    float initial_p,
+                                    float final_p,
+                                    int max_length,
+                                    int current_gen,
+                                    int decoding) {
         // Building environment for creating ONNX session environment
         // Retrieve the session from the SessionCache object
         Ort::Session& session = sessionCache->inference_session;
@@ -317,7 +323,8 @@ namespace inference{
             auto output_tensors = session.Run(Ort::RunOptions(nullptr),
                                               input_node_names_char.data(), ort_tensors.data(), inputCount,
                                               output_node_names_char.data(), outputCount);
-            int decode_id = GreedyDecoding(output_tensors);
+//            int decode_id = GreedyDecoding(output_tensors);
+            int decode_id = decoding::StaticDecoding(output_tensors, k, initial_p, final_p, max_length, current_gen);
             return decode_id;
         }
     }

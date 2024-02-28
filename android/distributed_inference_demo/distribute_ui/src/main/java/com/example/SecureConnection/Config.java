@@ -27,6 +27,12 @@ public class Config {
     public  boolean isTailer;
     public  boolean isDecoder;
     public int deviceId;
+
+    public int k;
+
+    public float initial_temp;
+
+    public float final_temp;
     public String[] ipGraph;
 
     public Config(String root, int rootPort){
@@ -36,6 +42,17 @@ public class Config {
         this.rootPort = rootPort;
         this.isHeader = false;
         this.isTailer = false;
+    }
+    public Config(String root, int rootPort, int k, float initial_temp, float final_temp){
+        Config.local = getCurrentDeviceIP();
+        Config.port = 12345;
+        this.root = root;
+        this.rootPort = rootPort;
+        this.isHeader = false;
+        this.isTailer = false;
+        this.k = k;
+        this.initial_temp = initial_temp;
+        this.final_temp = final_temp;
     }
 
     public Config(String root, int rootPort, List<String> prevNodes, List<String> nextNodes, boolean header, boolean tailer){

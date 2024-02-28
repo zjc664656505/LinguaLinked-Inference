@@ -13,6 +13,7 @@ add_library(
         native-lib.cpp
         utils.cpp
         inference.cpp
+        decoding.cpp
 )
 
 set(TOKENIZER_CPP_PATH ${CMAKE_SOURCE_DIR}/tokenizers-cpp)
