@@ -138,7 +138,7 @@ public class BackgroundService extends Service {
             // k is parameter for top-k
             // initial_temp is the parameter for temperature.
             // dynamic temp adjustment is disabled for now by setting final_temp to 0.
-            Config cfg = new Config(server_ip, 23456, 5, .7f, 0.0f);
+            Config cfg = new Config(server_ip, 23456, 5, 0.7f);
 
             Communication com = new Communication(cfg);
             Communication.loadBalance = new LoadBalance(com, cfg);

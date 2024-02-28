@@ -43,7 +43,7 @@ public class Config {
         this.isHeader = false;
         this.isTailer = false;
     }
-    public Config(String root, int rootPort, int k, float initial_temp, float final_temp){
+    public Config(String root, int rootPort, int k, float initial_temp){
         Config.local = getCurrentDeviceIP();
         Config.port = 12345;
         this.root = root;
@@ -52,7 +52,6 @@ public class Config {
         this.isTailer = false;
         this.k = k;
         this.initial_temp = initial_temp;
-        this.final_temp = final_temp;
     }
 
     public Config(String root, int rootPort, List<String> prevNodes, List<String> nextNodes, boolean header, boolean tailer){

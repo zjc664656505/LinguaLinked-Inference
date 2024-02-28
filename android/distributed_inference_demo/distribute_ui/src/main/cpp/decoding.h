@@ -27,10 +27,7 @@
 namespace decoding {
     int StaticDecoding(std::vector<Ort::Value>& probs,
                        int k,
-                       float initial_temp,
-                       float final_temp,
-                       int max_length,
-                       int current_gen_len);
+                       float initial_temp);
 }
 
 

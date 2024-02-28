@@ -23,23 +23,15 @@
 namespace decoding {
     int StaticDecoding(std::vector<Ort::Value>& probs,
                        int k,
-                       float initial_temp,
-                       float final_temp,
-                       int max_length,
-                       int current_gen_len) {
+                       float initial_temp) {
         // TOP-k Sampling
         auto probs_shape = probs.front().GetTensorTypeAndShapeInfo().GetShape();
         int dim2 = probs_shape[1];  // sequence length
         int dim3 = probs_shape[2];  // vocabulary size
         float* tensor_prob = probs.front().GetTensorMutableData<float>();
         int start_index = (dim2 - 1) * dim3;
-        float temperature;
-        if (final_temp == 0.0f){
-            temperature = initial_temp;
-        }
-        else{
-            temperature = initial_temp - (initial_temp-final_temp)*(current_gen_len/static_cast<float>(max_length));
-        }
+        float temperature = initial_temp;
+
 
         // Find the top-k probability indices
         std::vector<std::pair<float, int>> prob_and_index;

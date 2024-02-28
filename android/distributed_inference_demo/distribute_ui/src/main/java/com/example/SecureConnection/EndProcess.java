@@ -51,18 +51,17 @@ public class EndProcess implements Runnable{
 
     public int finishSteps(int receivedId,
                            Map<Integer, Socket> serverSocket,
-                           Map<Integer, Socket>  clientSocket,
-                           int current_gen_id) throws InterruptedException, JSONException, JSONException {
+                           Map<Integer, Socket>  clientSocket) throws InterruptedException, JSONException, JSONException {
         long startTime = System.nanoTime();
 
-        Communication.OneStep step = com.new OneStep(receivedId, serverSocket, clientSocket, current_gen_id);
+        Communication.OneStep step = com.new OneStep(receivedId, serverSocket, clientSocket);
 
         receivedId = step.procssingAsClient(receivedId);
         System.out.println("No." + receivedId + " Part1 End Process Time: " + (System.nanoTime() - startTime) / 1000000000.0);
 
         if (!cfg.isHeader()) {
             startTime = System.nanoTime();
-            com.inferenceProcedure(receivedId, 1);
+            com.inferenceProcedure(receivedId);
             System.out.println("No." + receivedId + " Part2 End Process Time: " + (System.nanoTime() - startTime) / 1000000000.0);
 
             startTime = System.nanoTime();
@@ -87,7 +86,7 @@ public class EndProcess implements Runnable{
             // classification
             System.out.println("++++++++++++SampleID: " + receivedId);
             try {
-                receivedId = finishSteps(receivedId, serverSocket, clientSocket, 1);
+                receivedId = finishSteps(receivedId, serverSocket, clientSocket);
             } catch (InterruptedException | JSONException e) {
                 throw new RuntimeException(e);
             }
@@ -97,7 +96,7 @@ public class EndProcess implements Runnable{
                 long startTime = System.nanoTime();
                 System.out.println("++++++++++++SampleID: " + receivedId + "++++++++++TokenID:" + m);
                 try {
-                    receivedId = finishSteps(receivedId, serverSocket, clientSocket, m);
+                    receivedId = finishSteps(receivedId, serverSocket, clientSocket);
                 } catch (InterruptedException | JSONException e) {
                     throw new RuntimeException(e);
                 }

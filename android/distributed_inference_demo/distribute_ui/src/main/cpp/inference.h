@@ -44,10 +44,7 @@ namespace inference{
 
     int run_inference_with_decoding(SessionCache* sessionCache, std::vector<Ort::Value> &ort_tensors, std::vector<int> &input_ids,
                                     int k,
-                                    float initial_p,
-                                    float final_p,
-                                    int max_length,
-                                    int current_gen,
+                                    float initial_temp,
                                     int decoding);
 
     size_t run_inference_with_binary_classification(SessionCache* sessionCache, std::vector<Ort::Value> &ort_tensors, std::vector<int> &input_ids, int classification);

@@ -273,10 +273,7 @@ namespace inference{
                                     std::vector<Ort::Value> &ort_tensors,
                                     std::vector<int> &input_ids,
                                     int k,
-                                    float initial_p,
-                                    float final_p,
-                                    int max_length,
-                                    int current_gen,
+                                    float initial_temp,
                                     int decoding) {
         // Building environment for creating ONNX session environment
         // Retrieve the session from the SessionCache object
@@ -324,7 +321,7 @@ namespace inference{
                                               input_node_names_char.data(), ort_tensors.data(), inputCount,
                                               output_node_names_char.data(), outputCount);
 //            int decode_id = GreedyDecoding(output_tensors);
-            int decode_id = decoding::StaticDecoding(output_tensors, k, initial_p, final_p, max_length, current_gen);
+            int decode_id = decoding::StaticDecoding(output_tensors, k, initial_temp);
             return decode_id;
         }
     }

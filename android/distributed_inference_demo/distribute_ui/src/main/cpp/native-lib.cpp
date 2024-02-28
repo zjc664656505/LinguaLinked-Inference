@@ -1353,9 +1353,6 @@ Java_com_example_SecureConnection_Communication_runInferenceWorkerResidualLastGe
     std::vector<int> input_ids;
     int top_k = k;
     float initial_temp = init_temp;
-    float fin_temp = final_temp;
-    int m_len = max_len;
-    int c_len = current_gen;
 
     jint sequential_length = env->GetArrayLength(sequential_input);
     if (sequential_length > 0) {
@@ -1400,9 +1397,6 @@ Java_com_example_SecureConnection_Communication_runInferenceWorkerResidualLastGe
                                                          input_ids,
                                                          top_k,
                                                          initial_temp,
-                                                         fin_temp,
-                                                         m_len,
-                                                         c_len,
                                                          1);
 
     std::vector<char> bytes = utils::SerializeInt(result);
