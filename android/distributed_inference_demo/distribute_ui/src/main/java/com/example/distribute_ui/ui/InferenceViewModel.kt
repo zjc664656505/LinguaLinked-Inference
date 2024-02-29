@@ -129,15 +129,10 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
         this.testInput = content
         comScope.launch {
             withContext(Dispatchers.IO) {
-                val testInputs = arrayOf(
-//                    input
+                val testInputs = ArrayList(arrayOf(
                     testInput
-//                    "I love machine learning",
-//                    "I hate machine learning",
-//                    "I love distributed learning on edge!",
-//                    "I hate distributed learning on edge!"
-                )
-                Log.d(TAG, "input is ${testInputs[0]}")
+                ).toList())
+//                Log.d(TAG, "input is ${testInputs[0]}")
                 val corePoolSize = 2
                 val maximumPoolSize = 2
                 val keepAliveTime = 1000
@@ -192,10 +187,10 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
                 com!!.param.classes = arrayOf("Negative", "Positive")
 //                prepared = 1
                 if (nodeId == 0) {
-                    val testInputs = arrayOf(
+                    val testInputs = ArrayList(arrayOf(
                         testInput
-                    )
-                    Log.d(TAG, "input is ${testInputs[0]}")
+                    ).toList())
+//                    Log.d(TAG, "input is ${testInputs[0]}")
                     val corePoolSize = 2
                     val maximumPoolSize = 2
                     val keepAliveTime = 1000

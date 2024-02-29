@@ -159,7 +159,7 @@ public class Communication {
         });
     }
 
-    public void runRunningThread(int corePoolSize, int maximumPoolSize, int keepAliveTime, String[] input_data){
+    public void runRunningThread(int corePoolSize, int maximumPoolSize, int keepAliveTime, ArrayList<String> input_data){
         executor.submit(()-> {
             try {
                 this.running(corePoolSize, maximumPoolSize, keepAliveTime, input_data);
@@ -316,25 +316,32 @@ public class Communication {
         }
     }
 
-    public void running(int corePoolSize, int maximumPoolSize, int keepAliveTime, String[] input_data) throws Exception {
+    public void running(int corePoolSize, int maximumPoolSize, int keepAliveTime, ArrayList<String> input_data) throws Exception {
 
         while(!param.status.equals("Running")) {
 //            Log.d(TAG, "param.status: " + param.status);
             Thread.sleep(1000);
         }
 
-        if (cfg.isHeader()) {
-            assert input_data != null;
-            for (int i = 0; i < input_data.length; i++) {
-                System.out.println(input_data[i]);
-                int[] data = encodeString(input_data[i], tokenizer);
-                System.out.println(Arrays.toString(data));
-                this.InputIds.put(i, Utils.convertIntegerArrayToArrayList(data));
-            }
-        } else {
+//        if (cfg.isHeader()) {
+//            while(input_data.length == 0) {
+////            Log.d(TAG, "param.status: " + param.status);
+//                Thread.sleep(1000);
+//            }
+//            for (int i = 0; i < input_data.length; i++) {
+//                System.out.println(input_data[i]);
+//                int[] data = encodeString(input_data[i], tokenizer);
+//                System.out.println(Arrays.toString(data));
+//                this.InputIds.put(i, Utils.convertIntegerArrayToArrayList(data));
+//            }
+//        } else {
             // ignore all input_data
+//            input_data = null;
+//        }
+
+        if (!cfg.isHeader())
             input_data = null;
-        }
+
 
 //        System.out.println("Work here");
 
@@ -368,6 +375,17 @@ public class Communication {
         long startTime = System.nanoTime();
 
         while (true) {
+            if (sampleId >= param.numSample) {
+                break;
+            }else{
+                if (cfg.isHeader) {
+                    while(sampleId >= input_data.size())
+                        Thread.sleep(1000);
+                    int[] data = encodeString(input_data.get(sampleId), tokenizer);
+                    System.out.println(Arrays.toString(data));
+                    this.InputIds.put(sampleId, Utils.convertIntegerArrayToArrayList(data));
+                }
+            }
             if (pool.getActiveCount() + waitingQueue.size() < corePoolSize) {
                 System.out.println(!LB_Pause.condition);
                 System.out.println(loadBalance.reSampleId == -1);
@@ -392,28 +410,27 @@ public class Communication {
             }
             Log.d(TAG, "****InputId array:" + InputIds.get(0));
 
-
-            if (sampleId >= param.numSample) {
-//                int current_permit = latch.availablePermits();
-////                System.out.println("available permits " + latch.availablePermits());
-//                System.out.println("Num of sample left" + (param.corePoolSize - latch.availablePermits()));
-//                Log.d(TAG, "Num of sample left" + (param.corePoolSize - latch.availablePermits()));
-//                while (true) {
-//                    if (latch.availablePermits() < param.corePoolSize) {
-//                        System.out.println("available permits " + latch.availablePermits());
-//                        Log.d(TAG, "available permits " + latch.availablePermits());
-//                        if (pool.getActiveCount() < param.corePoolSize) {
-////                            pool.execute(new multiSteps(param.numSample-1, latch));
-//                            pool.execute(new EndProcess(cfg,this, latch));
-//                        } else {
-//                            Thread.sleep(1000);
-//                        }
-//                    } else {
-//                        break;
-//                    }
-//                }
-                break;
-            }
+//            if (sampleId >= param.numSample) {
+////                int current_permit = latch.availablePermits();
+//////                System.out.println("available permits " + latch.availablePermits());
+////                System.out.println("Num of sample left" + (param.corePoolSize - latch.availablePermits()));
+////                Log.d(TAG, "Num of sample left" + (param.corePoolSize - latch.availablePermits()));
+////                while (true) {
+////                    if (latch.availablePermits() < param.corePoolSize) {
+////                        System.out.println("available permits " + latch.availablePermits());
+////                        Log.d(TAG, "available permits " + latch.availablePermits());
+////                        if (pool.getActiveCount() < param.corePoolSize) {
+//////                            pool.execute(new multiSteps(param.numSample-1, latch));
+////                            pool.execute(new EndProcess(cfg,this, latch));
+////                        } else {
+////                            Thread.sleep(1000);
+////                        }
+////                    } else {
+////                        break;
+////                    }
+////                }
+//                break;
+//            }
         }
 
         Utils.await(latch, param.corePoolSize);
@@ -440,8 +457,8 @@ public class Communication {
         Log.d(TAG, "Running time is: " + timeUsage[1] + "seconds");
 
         if (cfg.isHeader()) {
-            assert Objects.requireNonNull(input_data).length >= logits.size();
-            assert Objects.requireNonNull(input_data).length >= param.numSample;
+            assert Objects.requireNonNull(input_data).size() >= logits.size();
+            assert Objects.requireNonNull(input_data).size() >= param.numSample;
             for (int i = 0; i < param.numSample; i++) {
                 if ((param.max_length == 0) && (param.task_type.equals("classification"))) {
                     System.out.println("The result of sample " + i + ":" + this.param.classes[binaryClassify(logits.get(i))]);

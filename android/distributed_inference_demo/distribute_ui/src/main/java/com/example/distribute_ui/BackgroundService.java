@@ -64,6 +64,7 @@ public class BackgroundService extends Service {
 
     private String messageContent = "";
 
+    public static String[] rawInputText;
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onRunningStatus(Events.RunningStatusEvent event){
@@ -193,6 +194,7 @@ public class BackgroundService extends Service {
                 }
             }
 
+
             if (shouldStartInference && cfg.isHeader()){
                 // 4.1 parameters set for classification task
                 com.param.classes = new String[]{"Negative", "Positive"};
@@ -206,7 +208,7 @@ public class BackgroundService extends Service {
                 // is set to 1 for testing single-turn chat conversation.
 
                 // 4.4 Based on whether user give input to run the inference
-                String[] test_input = new String[com.param.numSample];
+                ArrayList<String> test_input = new ArrayList<>();
 
                 // 4.4.1 Receive userinput from chatscreen and save it to test_input array
                 while (!messageStatus) {
@@ -217,16 +219,38 @@ public class BackgroundService extends Service {
                         break; // Exit the loop if the thread is interrupted
                     }
                 }
-                final String userinput = messageContent;
+
 
                 if (cfg.isHeader()) {
-                    int j = 0;
-                    while (j < com.param.numSample) {
-                        test_input[j++] = userinput;
-                    }
+//                    int j = 0;
+//                    while (j < com.param.numSample) {
+//                        test_input[j++] = userinput;
+//                    }
+
+                    new Thread(() -> {
+                        // Your code here
+                        int j = 0;
+                        String userinput = "";
+                        while (j < com.param.numSample) {
+                            if (messageContent.equals(userinput)){
+                                try {
+                                    Thread.sleep(1000);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }else {
+                                System.out.println("New user input");
+                                System.out.println("***************" + messageContent);
+                                userinput = messageContent;
+                                test_input.add(userinput);
+                                j++;
+                            }
+                        }
+                    }).start();
+
                 }
 
-                System.out.println("Background Service: "+test_input);
+                System.out.println("Background Service: "+ test_input.toString());
                 System.out.println(com.param.numSample);
 
                 int corePoolSize = 2;
@@ -258,12 +282,15 @@ public class BackgroundService extends Service {
                 Log.d(TAG, "Results Computation Time: " + (System.nanoTime() - startTime) / 1000000000.0);
                 return null;
             }
+
             else if (!shouldStartInference && !cfg.isHeader()){ // running on devices are not header
+
                 com.param.classes = new String[]{"Negative", "Positive"};
                 Dataset dataset = null;
                 while (com.param.numSample <= 0)
                     Thread.sleep(1000);
-                String[] test_input = new String[com.param.numSample];
+//                String[] test_input = new String[com.param.numSample];
+                ArrayList<String> test_input = new ArrayList<>();
                 int corePoolSize = 2;
                 int maximumPoolSize = 2;
                 int keepAliveTime = 500;
