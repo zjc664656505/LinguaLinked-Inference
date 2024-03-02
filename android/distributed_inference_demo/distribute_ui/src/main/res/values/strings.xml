@@ -6,7 +6,7 @@
     <string name="button_reset">Reset</string>
     <string name="cancel">Cancel</string>
     <string name="next">Next</string>
-    <string name="author_me">me</string>
+    <string name="author_me">You</string>
     <string name="robot">robot</string>
     <string name="send">send</string>
     <string name="textfield_desc">Text input</string>

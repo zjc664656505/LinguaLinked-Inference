@@ -1,25 +1,19 @@
 package com.example.distribute_ui.data
-
-import com.example.distribute_ui.ui.ChatUiState
-import com.example.distribute_ui.ui.Message
+import com.example.distribute_ui.ui.Messaging
 
 val initialMessages = mutableListOf(
-    Message(
+    Messaging(
         "Robot",
         "Test",
         "03:07 pm",
         null
     ),
-    Message(
+    Messaging(
         "Me",
         "Test Reply",
         "03:07 pm",
         null
     )
-)
-
-val exampleUiState = ChatUiState(
-    initialMessages = initialMessages
 )
 
 val exampleModelName = listOf(

@@ -9,6 +9,12 @@ object DataRepository {
     private val _decodingStringLiveData = MutableLiveData<String>()
     val decodingStringLiveData: LiveData<String> = _decodingStringLiveData
 
+    private val _sampleId = MutableLiveData<Int>()
+    val sampleId: LiveData<Int> = _sampleId
+    fun updateSampleId(sampleId: Int) {
+        _sampleId.postValue(sampleId)
+    }
+
     fun updateDecodingString(updatedString: String) {
         _decodingStringLiveData.postValue(updatedString)
     }

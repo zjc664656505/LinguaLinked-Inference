@@ -113,22 +113,6 @@ class SelectionActivity : ComponentActivity(), LatencyMeasurementCallbacks {
             Log.d(BackgroundService.TAG, "write external storage permit is ok")
         }
 
-        // test using service to run onnx inference
-        
-
-
-
-//        val context : Context = this@SelectionActivity
-////        fileDirPath = context.filesDir.toString()
-////        val path =
-//        val fileDirPath = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.absolutePath
-//        Log.d(TAG, "fileDirPath is $fileDirPath")
-//        if (fileDirPath != null) {
-//            viewModel.setDirPath(fileDirPath)
-//        } else {
-//            Log.d(TAG, "external storage file path is incorrect")
-//        }
-
         backgroundIntent = Intent(this, BackgroundService::class.java)
 
         val filter = IntentFilter("START_MONITOR")
@@ -199,6 +183,7 @@ class SelectionActivity : ComponentActivity(), LatencyMeasurementCallbacks {
         stopService(backgroundIntent)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onLatencyMeasured(latency: Double) {
         viewModel.updateLatency(latency)
     }

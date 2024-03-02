@@ -1,6 +1,5 @@
 package com.example.distribute_ui.ui
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -41,18 +41,13 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LastBaseline
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.distribute_ui.BackgroundService
-import com.example.distribute_ui.DataRepository
 import com.example.distribute_ui.R
 import com.example.distribute_ui.TAG
 import com.example.distribute_ui.data.initialMessages
@@ -84,24 +79,12 @@ fun ChatScreen(
     modifier: Modifier = Modifier
 ) {
     val authorMe = stringResource(R.string.author_me)
-
-    val currentTimeMillis = System.currentTimeMillis()
-    // Convert milliseconds since the epoch to an Instant
-    val instant = Instant.ofEpochMilli(currentTimeMillis)
-    // Format the Instant as a String
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
-    val formatted = formatter.format(instant)
-    val timeNow = formatted
-    val context = LocalContext.current
     val scrollState = rememberLazyListState()
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
     val scope = rememberCoroutineScope()
     val uiState = viewModel.uiState.collectAsState()
-
-    // observe model response
-    val decodedString by DataRepository.decodingStringLiveData.observeAsState("")
-
+    val sampleId by viewModel.sampleId.observeAsState(0)
     Scaffold(
         topBar = {
             ChatBar(
@@ -127,7 +110,6 @@ fun ChatScreen(
             .contentWindowInsets
             .exclude(WindowInsets.navigationBars)
             .exclude(WindowInsets.ime),
-//        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
         modifier = modifier
     ) { paddingValues ->
         Column(
@@ -136,8 +118,7 @@ fun ChatScreen(
                 .padding(paddingValues)
         ) {
             Messages(
-                messages = uiState.value.messages,
-                decodedString = decodedString,
+                chatHistory= viewModel.chatHistory,
                 modifier = Modifier.weight(1f),
                 scrollState = scrollState
             )
@@ -145,9 +126,7 @@ fun ChatScreen(
                 onClicked = {
                 },
                 onMessageSent = { content ->
-                    viewModel.addMessage(
-                        Message(authorMe, content, timeNow)
-                    )
+                    viewModel.addChatHistory(Messaging(authorMe, content, getCurrentFormattedTime()))
                     EventBus.getDefault().post(Events.messageSentEvent(true, content))
                 },
                 resetScroll = {
@@ -155,8 +134,6 @@ fun ChatScreen(
                         scrollState.scrollToItem(0)
                     }
                 },
-                // let this element handle the padding so that the elevation is shown behind the
-                // navigation bar
                 modifier = Modifier
                     .navigationBarsPadding()
                     .imePadding()
@@ -181,10 +158,18 @@ fun ChatBar(
     )
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
+fun getCurrentFormattedTime(): String {
+    val currentTimeMillis = System.currentTimeMillis()
+    val instant = Instant.ofEpochMilli(currentTimeMillis)
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
+    return formatter.format(instant)
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Messages(
-    messages: List<Message>,
-    decodedString: String, // Correct parameter name to match Kotlin conventions
+    chatHistory: MutableList<Messaging>,
     scrollState: LazyListState,
     modifier: Modifier = Modifier
 ) {
@@ -193,33 +178,21 @@ fun Messages(
             state = scrollState,
             modifier = Modifier.fillMaxSize()
         ) {
-            items(messages.size) { index ->
-                val message = messages[index]
+            itemsIndexed(chatHistory) { index, message ->
+                val isUserMessage = index % 2 == 0 // Assuming even indices are user messages, odd are model messages
+                val formattedMessage = message
                 Message(
-                    msg = message,
-                    isUserMe = message.author == "Me" // Assuming the author "Me" represents the user
+                    msg = formattedMessage,
+                    isUserMe = isUserMessage // Determine if the message is from the user or the model based on index
                 )
-            }
-
-            // Check if decodedString is not empty and display it
-            if (decodedString.isNotEmpty()) {
-                item {
-                    // Display decodedString in a single message box
-                    // Assuming the model is represented as "Model"
-                    Message(
-                        msg = Message(author = "LinguaLinked", content = decodedString, timestamp = "Now"),
-                        isUserMe = false // Model messages are not from the user
-                    )
-                }
             }
         }
     }
 }
 
-
 @Composable
 fun Message(
-    msg: Message,
+    msg: Messaging,
     isUserMe: Boolean,
 ) {
     val borderColor = if (isUserMe) {
@@ -229,7 +202,7 @@ fun Message(
     }
 
     Column(
-        modifier = Modifier.padding(horizontal = 8.dp)
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Row(modifier = Modifier.semantics(mergeDescendants = true) {}) {
             Text(
@@ -237,7 +210,6 @@ fun Message(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier
                     .alignBy(LastBaseline)
-//                .paddingFrom(LastBaseline, after = 8.dp) // Space to 1st bubble
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -252,23 +224,11 @@ fun Message(
             style = MaterialTheme.typography.bodyMedium
         )
     }
-
-//    val spaceBetweenAuthors = Modifier
-//    Row(modifier = spaceBetweenAuthors) {
-//        Spacer(modifier = Modifier.width(74.dp))
-//        AuthorAndTextMessage(
-//            msg = msg,
-//            isUserMe = isUserMe,
-//            modifier = Modifier
-//                .padding(end = 16.dp)
-//                .weight(1f)
-//        )
-//    }
 }
 
 @Composable
 fun AuthorAndTextMessage(
-    msg: Message,
+    msg: Messaging,
     isUserMe: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -280,7 +240,7 @@ fun AuthorAndTextMessage(
 }
 
 @Composable
-private fun AuthorNameTimestamp(msg: Message) {
+private fun AuthorNameTimestamp(msg: Messaging) {
     // Combine author and timestamp for a11y.
     Row(modifier = Modifier.semantics(mergeDescendants = true) {}) {
         Text(
@@ -332,7 +292,7 @@ private fun RowScope.DayHeaderLine() {
 
 @Composable
 fun ChatItemBubble(
-    message: Message,
+    message: Messaging,
     isUserMe: Boolean,
 ) {
 
@@ -376,10 +336,11 @@ fun ConversationPreview() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview
 @Composable
 fun MessagesPreview() {
     Distributed_inference_demoTheme {
-        Messages(messages = initialMessages, decodedString="example model response", scrollState = rememberLazyListState())
+        Messages(chatHistory = initialMessages, scrollState = rememberLazyListState())
     }
 }

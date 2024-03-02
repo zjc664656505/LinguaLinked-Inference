@@ -1,12 +1,12 @@
 package com.example.distribute_ui.ui
-
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import com.example.SecureConnection.Communication
 import com.example.SecureConnection.Config
 import com.example.distribute_ui.DataRepository
@@ -15,33 +15,64 @@ import com.example.distribute_ui.data.modelMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 class InferenceViewModel(application: Application) : AndroidViewModel(application) {
     private var filesDirPath : String = ""
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
     val isDirEmpty: LiveData<Boolean> = DataRepository.isDirEmptyLiveData
-//    private val _IPState = MutableStateFlow(false)
-//    val IPState: StateFlow<Boolean> get() = _IPState
-
+    val sampleId: LiveData<Int> = DataRepository.sampleId
     private val _prepareState = MutableStateFlow(false)
     val prepareState: StateFlow<Boolean> = _prepareState.asStateFlow()
-
     val sharedPref = application.getSharedPreferences("myPrefs", Context.MODE_PRIVATE)
-
     var testInput = "I love deep learning"
+    val chatHistory = _uiState.value.chatHistory
+    private var updatingDecodedString: Boolean = false
+    private var decodedStringIndex: Int = -1
+    private var previousSampleID: Int = 0
+    val modelAuhthor = "LinguaLinked"
 
-//    var prepared = 0
+    init {
+        // Observe decodedStringLiveData from data repository
+        DataRepository.decodingStringLiveData.observeForever { decodedString ->
+            // Update chat history when decodedString changes
+            if (!decodedString.isNullOrEmpty()) {
+                if (updatingDecodedString) {
+                    chatHistory.add(Messaging(modelAuhthor, decodedString, getCurrentFormattedTime()))
+                    decodedStringIndex = chatHistory.lastIndex
+                    updatingDecodedString = false
+                } else {
+                    // Otherwise, replace the previous decoded string with the updated one
+                    if (decodedStringIndex != -1) {
+                        chatHistory[decodedStringIndex!!] = Messaging(modelAuhthor, decodedString, getCurrentFormattedTime())
+                    } else {
+                        chatHistory.add(Messaging(modelAuhthor, decodedString, getCurrentFormattedTime()))
+                        decodedStringIndex = chatHistory.lastIndex
+                    }
+                }
+            }
+        }
+        DataRepository.sampleId.observeForever { sampleId ->
+            // If sampleId is updated, set updatingDecodedString to true
+            if (sampleId != null && sampleId != previousSampleID && chatHistory.size==decodedStringIndex+2) {
+                // Set updatingDecodedString to true only when sampleId meets the conditions
+                updatingDecodedString = true
+                previousSampleID = sampleId
+            }
+        }
+    }
 
-    // masterId: 1 -> Header; 0 -> Worker
     var nodeId: Int = 0
     var modelName: String = ""
     var config: Config? = null
@@ -64,6 +95,14 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
         _cpuFrequency.postValue(freq)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getCurrentFormattedTime(): String {
+        val currentTimeMillis = System.currentTimeMillis()
+        val instant = Instant.ofEpochMilli(currentTimeMillis)
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
+        return formatter.format(instant)
+    }
+
     fun updateLatency(latency: Double) {
         Log.d(TAG, "update latency is $latency")
         _latency.postValue(latency)
@@ -78,9 +117,8 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.value.modelName = modelName
     }
 
-    fun addMessage(msg: Message) {
-        Log.d(TAG, "send message: ${msg.content}")
-        _uiState.value._messages.add(0, msg)
+    fun addChatHistory(msg: Messaging){
+        chatHistory.add(msg)
     }
 
     private fun getUpdateInfo(): List<String> {
@@ -236,16 +274,6 @@ class InferenceViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun resetPrepareState() {
         _prepareState.value = false
-    }
-
-    fun testInference() {
-        ioScope.launch {
-            val testOutput = "This is test output"
-            delay(5000)
-            addMessage(
-                Message("robot", testOutput, "now")
-            )
-        }
     }
 
     init {

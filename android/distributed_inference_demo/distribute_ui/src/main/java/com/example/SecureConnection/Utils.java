@@ -47,7 +47,6 @@ public class Utils {
     public static void unzipFile(String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
-            System.out.println("The zip file '" + filePath + "' does not exist.");
             Log.d(TAG, "The zip file '" + filePath + "' does not exist.");
             return;
         }
@@ -56,16 +55,13 @@ public class Utils {
             ZipFile zipFile = new ZipFile(file);
             zipFile.close();
         } catch (IOException e) {
-            System.out.println("'" + filePath + "' is not a zip file. (Packet loss)");
             Log.d(TAG, "'" + filePath + "' is not a zip file. (Packet loss)");
             e.printStackTrace();
-            System.out.println("zip error: " + e.toString());
             Log.d(TAG, "zip error: " + e.toString());
         }
 
         String targetDirectory = file.getParent() + "/device";
         unzip(filePath, targetDirectory);
-        System.out.println("Zip file extracted to "+ targetDirectory +" successfully.");
         Log.d(TAG, "Zip file extracted to "+ targetDirectory +" successfully.");
     }
 

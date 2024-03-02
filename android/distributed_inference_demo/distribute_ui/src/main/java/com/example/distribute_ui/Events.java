@@ -25,4 +25,11 @@ public class Events {
             this.enterChat = enterChat;
         }
     }
+
+    public static class sampleIdEvent{
+        public final int sampleId;
+        public sampleIdEvent(int sampleId){
+            this.sampleId = sampleId;
+        }
+    }
 }

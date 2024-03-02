@@ -4,20 +4,15 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.toMutableStateList
 
 class ChatUiState(
-    initialMessages: MutableList<Message> = mutableListOf()
+    initialMessages: MutableList<Messaging> = mutableListOf()
     ) {
-    val _messages: MutableList<Message> = initialMessages.toMutableStateList()
-    val messages: List<Message> = _messages
+    val _chatHistory: MutableList<Messaging> = initialMessages.toMutableStateList()
+    val chatHistory = _chatHistory
     var modelName: String = ""
-    var connectedDevices: Int = 0
-
-//    fun addMessage(msg: Message) {
-//        _messages.add(0, msg) // Add to the beginning of the list
-//    }
 }
 
 @Immutable
-data class Message(
+data class Messaging(
     val author: String,
     val content: String,
     val timestamp: String,

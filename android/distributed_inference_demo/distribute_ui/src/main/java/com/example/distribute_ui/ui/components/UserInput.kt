@@ -87,9 +87,9 @@ fun UserInput(
                     onSend = {
                         if (textState.text.isNotBlank()) {
                             keyboardController?.hide()
-
                             onMessageSent(textState.text)
                             onClicked()
+
                             // Reset text field and close keyboard
                             textState = TextFieldValue()
                             resetScroll()

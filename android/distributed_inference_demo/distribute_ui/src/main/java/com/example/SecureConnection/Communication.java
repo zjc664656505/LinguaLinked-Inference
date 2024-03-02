@@ -1,9 +1,6 @@
 package com.example.SecureConnection;
-
 import static com.example.distribute_ui.BackgroundService.TAG;
-
 import android.util.Log;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.zeromq.ZMQ;
@@ -24,7 +21,6 @@ import java.util.concurrent.*;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZContext;
 import org.zeromq.SocketType;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -33,13 +29,6 @@ import org.json.JSONObject;
 import com.example.SecureConnection.Utils.LBPause;
 import com.example.distribute_ui.DataRepository;
 
-import ai.onnxruntime.NodeInfo;
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OnnxValue;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
-import ai.onnxruntime.OrtSession;
-import ai.onnxruntime.OrtSession.Result;
 
 public class Communication {
 
@@ -317,7 +306,6 @@ public class Communication {
     }
 
     public void running(int corePoolSize, int maximumPoolSize, int keepAliveTime, ArrayList<String> input_data) throws Exception {
-
         while(!param.status.equals("Running")) {
 //            Log.d(TAG, "param.status: " + param.status);
             Thread.sleep(1000);
@@ -496,6 +484,8 @@ public class Communication {
 
         @Override
         public void run() {
+            DataRepository.INSTANCE.updateSampleId(this.sample_id);
+            Log.d(TAG, "Sample ID: "+this.sample_id);
             if (param.max_length < 0) {
                 System.out.println("ERROR: Set up max_length");
             } else if (param.max_length == 0) {

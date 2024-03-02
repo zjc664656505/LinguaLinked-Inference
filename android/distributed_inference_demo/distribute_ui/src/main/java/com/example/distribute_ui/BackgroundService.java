@@ -1,35 +1,18 @@
 package com.example.distribute_ui;
-
-import static com.example.SecureConnection.Dataset.readCSV;
-
-import android.Manifest;
-import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
-
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
 import com.example.SecureConnection.Communication;
 import com.example.SecureConnection.Config;
 import com.example.SecureConnection.Dataset;
 import com.example.SecureConnection.LoadBalance;
-
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -37,34 +20,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.Properties;
 
 public class BackgroundService extends Service {
-
-    private static final int NOTIFICATION_ID = 123;
-    private static final String CHANNEL_ID = "MyChannelID";
     public static double[] results;
     public static final String TAG = "Lingual_backend";
-    public static final String ACTION_SEND_USER_INPUT = "com.example.distribute_ui.action.SEND_USER_INPUT";
-    public static final String EXTRA_USER_INPUT = "com.example.distribute_ui.extra.USER_INPUT";
-    public static final String ACTION_ENTER_CHAT_SCREEN = "com.example.distribute_ui.action.ENTER_CHAT_SCREEN";
     private String role = "worker";
     private boolean need_monitor = false;
-    private boolean running_classification = false;
+    private final boolean running_classification = false;
     private boolean shouldStartInference = false;
     private boolean runningStatus = false;
     private boolean messageStatus = false;
-    private boolean enterChatStatus = false;
     public static boolean isServiceRunning = false;
 
     private String messageContent = "";
-
-    public static String[] rawInputText;
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onRunningStatus(Events.RunningStatusEvent event){
@@ -228,7 +199,6 @@ public class BackgroundService extends Service {
 //                    }
 
                     new Thread(() -> {
-                        // Your code here
                         int j = 0;
                         String userinput = "";
                         while (j < com.param.numSample) {
@@ -250,13 +220,9 @@ public class BackgroundService extends Service {
 
                 }
 
-                System.out.println("Background Service: "+ test_input.toString());
-                System.out.println(com.param.numSample);
-
                 int corePoolSize = 2;
                 int maximumPoolSize = 2;
                 int keepAliveTime = 500;
-
                 try {
                     Log.d(TAG, "communication starts to running");
                     com.running(corePoolSize, maximumPoolSize, keepAliveTime, test_input);
