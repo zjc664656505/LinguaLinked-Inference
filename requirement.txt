@@ -59,3 +59,4 @@ tqdm==4.65.0
 transformers==4.30.2
 zmq
 deepspeed==0.13.0
+auto-gptq

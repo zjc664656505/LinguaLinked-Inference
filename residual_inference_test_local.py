@@ -154,7 +154,7 @@ if __name__ == "__main__":
     #     print(f"Device{i} - to_merge_index: {arrangement_result[i][0]}, dynamic_index: {arrangement_result[i][1]}\n")
 
     #modelcard = ModelCard("vicuna7b", quantization_option=False)
-    modelcard = ModelCard("bloom560m", quantization_option=False)
+    modelcard = ModelCard("gptq-opt125m-8bit", quantization_option=False)
     mem_util, out_size_map, bytearray_path, flop_module_path, num_flop, module_flop_map, num_modules \
         = modelcard.prepare_optimization_info()
 
