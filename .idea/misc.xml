@@ -3,5 +3,8 @@
   <component name="Black">
     <option name="sdkName" value="llm-quantization" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="onnx-training" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="$PROJECT_DIR$/../miniconda3/envs/onnx_training" project-jdk-type="Python SDK" />
+  <component name="PyPackaging">
+    <option name="earlyReleasesAsUpgrades" value="true" />
+  </component>
 </project>

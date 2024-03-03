@@ -1,6 +1,7 @@
 import shutil
 import onnx
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForSequenceClassification
+from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
 from transformers.file_utils import default_cache_path
 import os
 import torch
@@ -33,6 +34,7 @@ available_models = {
     "opt350m": ["facebook/opt-350m", "huggingface_tokenizer"],
     "opt1b3": ["facebook/opt-1.3b", "huggingface_tokenizer"],
     "opt125m": ["facebook/opt-125m", "huggingface_tokenizer"],
+    "gptq-opt125m-8bit": ["facebook/opt-125m", "huggingface_tokenizer"],
     "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"]
 }
 
@@ -84,9 +86,9 @@ class ModelCard:
             model_to_load = self.model_name
         if self.task_type == "Generation":
             # TODO: Auto-GPTQ only works on linux and windows -- Junchen Zhao 2/23/2024
-            if model_to_load.startswith("gptq"):
-                if model_to_load.endswith("vicuna-8bit"):
-                    pass
+            if self.model_name.startswith("gptq"):
+                self.model = AutoGPTQForCausalLM.from_quantized(self.model_name)
+                print(model_to_load)
             else:
                 self.model = AutoModelForCausalLM.from_pretrained(model_to_load, low_cpu_mem_usage=True)
         elif self.task_type == "Classification":
