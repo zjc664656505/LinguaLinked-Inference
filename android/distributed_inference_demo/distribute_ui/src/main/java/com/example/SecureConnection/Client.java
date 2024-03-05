@@ -242,7 +242,10 @@ public class Client {
             System.out.println("Model Exists");
             Log.d(TAG, "Model Exists");
         }
-        Utils.unzipFile(param.modelPath + "/module.zip");
+        if (skipModelDownload.equals("False")){
+            Utils.unzipFile(param.modelPath + "/module.zip");
+        }
+
     }
 
     public void modelInitialization(Config cfg, Communication.Params param) {

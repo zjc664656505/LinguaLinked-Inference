@@ -98,7 +98,7 @@ fun ChatScreen(
                         )
                         // Show greeting text
                         Text(
-                            text = "Welcome to LinguaLinked Chat.",
+                            text = "Welcome to LinguaLinked Inference.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

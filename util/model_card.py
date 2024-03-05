@@ -33,7 +33,8 @@ available_models = {
     "opt350m": ["facebook/opt-350m", "huggingface_tokenizer"],
     "opt1b3": ["facebook/opt-1.3b", "huggingface_tokenizer"],
     "opt125m": ["facebook/opt-125m", "huggingface_tokenizer"],
-    "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"]
+    "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"],
+    "qwen-7b": ["Qwen/Qwen1.5-7B-Chat-GPTQ-Int8", "huggingface_tokenizer"]
 }
 
 
@@ -606,7 +607,8 @@ class ModelCard:
                     shutil.copy(vocab_path, tokenizer_directory)
                     break
                 if "tokenizer.model" in os.listdir(subdir_path):
-                    tokenizer_directory = f"{subdir_path}/tokenizer.model"
+                    self.tokenizer.save_pretrained(subdir_path)
+                    tokenizer_directory = f"{subdir_path}/tokenizer.json"
                     break
         return tokenizer_directory
 

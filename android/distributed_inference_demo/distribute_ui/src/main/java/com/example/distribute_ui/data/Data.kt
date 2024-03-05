@@ -17,14 +17,9 @@ val initialMessages = mutableListOf(
 )
 
 val exampleModelName = listOf(
-        "bloom560m",
-        "bloom3b",
         "bloom1b1",
         "bloom1b7",
-        "opt125m",
-        "opt350m",
-        "opt1b3",
-        "vicuna7b-8bit"
+        "bloom3b"
 )
 
 val modelMap: HashMap<String, String> = hashMapOf(

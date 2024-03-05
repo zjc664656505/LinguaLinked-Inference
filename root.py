@@ -145,7 +145,7 @@ if __name__ == "__main__":
             monitor.is_monitor_ready.wait()
             ping_latency, bandwidths, TotalMem, AvailMem, flop_speed = monitor.get_monitor_info()
 
-            mem_threshold = 0.5  # set threshold for memory
+            mem_threshold = .7  # set threshold for memory
             TotalMem = [m * mem_threshold for m in TotalMem]
             AvailMem = [m * mem_threshold for m in AvailMem]
 
