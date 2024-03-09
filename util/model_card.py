@@ -34,7 +34,8 @@ available_models = {
     "opt1b3": ["facebook/opt-1.3b", "huggingface_tokenizer"],
     "opt125m": ["facebook/opt-125m", "huggingface_tokenizer"],
     "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"],
-    "qwen-7b": ["Qwen/Qwen1.5-7B-Chat-GPTQ-Int8", "huggingface_tokenizer"]
+    "qwen-7b": ["Qwen/Qwen1.5-7B-Chat-GPTQ-Int8", "huggingface_tokenizer"],
+    "chat-bloom1b7": ["szzzzz/chatbot_bloom_1b7", "huggingface_tokenizer"]
 }
 
 
