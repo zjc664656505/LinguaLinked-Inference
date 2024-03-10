@@ -24,7 +24,7 @@ torch.fx.wrap('len')
 available_models = {
     "bloom560m": ["bigscience/bloom-560m", "huggingface_tokenizer"],
     "bloom1b1": ["bigscience/bloom-1b1", "huggingface_tokenizer"],
-    "bloom1b7": ["bigscience/bloom-1b7", "huggingface_tokenizer"],
+    "bloom1b7": ["szzzzz/chatbot_bloom_1b7", "huggingface_tokenizer"],
     "bloom3b": ["bigscience/bloom-3b", "huggingface_tokenizer"],
     "bloom7b1": ["bigscience/bloom-7b1", "huggingface_tokenizer"],
     "vicuna7b": ["lmsys/vicuna-7b-v1.3", "sentencepiece_tokenizer"],
@@ -33,9 +33,7 @@ available_models = {
     "opt350m": ["facebook/opt-350m", "huggingface_tokenizer"],
     "opt1b3": ["facebook/opt-1.3b", "huggingface_tokenizer"],
     "opt125m": ["facebook/opt-125m", "huggingface_tokenizer"],
-    "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"],
-    "qwen-7b": ["Qwen/Qwen1.5-7B-Chat-GPTQ-Int8", "huggingface_tokenizer"],
-    "chat-bloom1b7": ["szzzzz/chatbot_bloom_1b7", "huggingface_tokenizer"]
+    "gptq-vicuna7b-8bit": ["TheBloke/vicuna-7B-v1.3-GPTQ", "huggingface_tokenizer"]
 }
 
 

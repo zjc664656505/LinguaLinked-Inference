@@ -16,6 +16,8 @@ object DataRepository {
     }
 
     fun updateDecodingString(updatedString: String) {
+//        val responsePosition: Int = updatedString.indexOf("Response:")
+//        val decodedStringAfterResponse: String = updatedString.substring(responsePosition + 9)
         _decodingStringLiveData.postValue(updatedString)
     }
 

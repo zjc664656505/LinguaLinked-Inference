@@ -67,7 +67,7 @@ class ModelSplit:
             start_idx = idx_list[0]
             end_idx = idx_list[-1]
             subnodes = node_list[start_idx:end_idx]
-            # print(subnodes)
+
             # create new graph
             subgraph = Graph()
             node_names = []
@@ -576,15 +576,14 @@ class ModelSplit:
         """
         Method for finding the subgraphs if starting at any graph node, the length of node.users is greater than 1
         At this point, there is a subgraph exists
-
         Input: torch.fx.GraphModule.graph
         -----
-
         Output: OrderedDict -> {torch.fx.GraphModule.graph.node: [[subgraph_start_index, subgraph_end_index], ...]}
         """
         ir_graph = graph
         graph_nodes = list(ir_graph.nodes)
         subgraph_nodes_0 = [i for i in graph_nodes if len(i.users) > 1 and len(i.args) == 1 and i.op == "call_module"]
+
         subgraph_nodes_1 = {}
         subgraph_node_map = OrderedDict()
 
@@ -706,7 +705,6 @@ class ModelSplit:
         """
         Checker function for correcting the operator mismatching issue between Pytorch and ONNX for creating
         Unsqueeze operator.
-
         :param subgraph_indices: the list of subgraph indices created from the function self.find_subgraph_user_based
         :param graph: model computational graph
         :return: the list of subgraph index that's checked
@@ -739,34 +737,7 @@ class ModelSplit:
             else:
                 result.append(subgraph_indices[i])
 
-        # Add subgraph index merge to avoid keyerror in subgraph node value remapping. Temp solution.
-        final_result = []
-        for i, idx_list in enumerate(result):
-            start_idx = idx_list[0]
-            end_idx = idx_list[-1]
-            subnodes = node_list[start_idx:end_idx]
-            subgraph = Graph()
-            node_names = []
-            value_remap = {}
-            for node in subnodes:
-                for arg in node.args:
-                    if isinstance(arg, torch.fx.Node) and arg.name not in node_names:
-                        value_remap[arg] = subgraph.placeholder(arg.name)
-                        node_names.append(arg.name)
-                node_names.append(node.name)
-
-            for node in subnodes:
-                try:
-                    value_remap[node] = subgraph.node_copy(node, lambda n: value_remap[n])
-                except KeyError: # indicating current model split is not proper, merge with previous subgraph index list
-                    if i > 0:
-                        # Merge with the previous subgraph
-                        previous_start_idx, _ = final_result.pop()
-                        idx_list = [previous_start_idx, end_idx]
-                        break  # Break the current loop to prevent further processing of this subgraph
-            final_result.append(idx_list)
-
-        return final_result
+        return result
 
     def get_placeholder_nodes(self, graph: torch.fx.GraphModule.graph) -> list:
         nodes = [n for n in graph.nodes if n.op == "placeholder"]

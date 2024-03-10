@@ -500,14 +500,20 @@ public class Communication {
                 cleanUpBuffer(receivedId);
             } else {
                 // generation
+                int receivedId = sampleId;
                 for (int m = 0; m < param.max_length; m++) {
                     long startTime = System.nanoTime();
                     System.out.println("++++++++++++SampleID: " + sample_id + "++++++++++TokenID:" + m);
                     try {
-                        int receivedId = new OneStep(this.sample_id, serverSocket, clientSocket).run();
+                        receivedId = new OneStep(this.sample_id, serverSocket, clientSocket).run();
                     } catch (InterruptedException | JSONException e) {
                         throw new RuntimeException(e);
                     }
+//
+////                    // Break for </s> token
+//                    if (receivedId == -1){
+//                        break;
+//                    }
 
                     System.out.println("Token Process Time: " + (System.nanoTime() - startTime) / 1000000000.0);
                 }
@@ -556,6 +562,9 @@ public class Communication {
                 receivedId = Utils.convertByteArrayToInt(serverSocket.recv(0));
                 System.out.println("ReceiveID: " + receivedId);
 
+//                if (receivedId == -1)
+//                    return -1;
+
                 Thread workerThread = new Thread(new ReceiveResidualConnection(receivedId, serverSocketMap));
                 workerThread.start();
 
@@ -573,6 +582,11 @@ public class Communication {
                 if (logits.get(receivedId) == null) {
                     System.out.println("Load Data");
                 }
+//                System.out.println("last token:");
+//                System.out.println(InputIds.get(receivedId).get(InputIds.get(receivedId).size()-1));
+//                if (InputIds.get(receivedId).get(InputIds.get(receivedId).size()-1) == 2){
+//                    return -1;
+//                }
             }
             return receivedId; // Either comes from received id or direct sample id
         }
@@ -607,6 +621,12 @@ public class Communication {
                     }
 //                    workerThread.join();
                 } else {
+//                    if (receivedId == -1){
+//                        byte[] id = Utils.convertIntToByteArray(receivedId);
+//                        clientSocket.sendMore(comefrom_id);
+//                        clientSocket.send(id);
+//                        return;
+//                    }
                     System.out.println(receivedId + " is not in the OutputData");
                 }
             }
@@ -619,6 +639,10 @@ public class Communication {
                 // Handle the case header to request tailer results
                 serverSocket.send("Request Data");
                 receivedId = Utils.convertByteArrayToInt(serverSocket.recv(0));
+
+//                if (receivedId == -1)
+//                    return receivedId;
+
                 if (receivedId != this.sample_id) {
                     System.out.println("Server: Data out of the order, sampleId: " + this.sample_id + ", receivedId: " + receivedId);
                 }

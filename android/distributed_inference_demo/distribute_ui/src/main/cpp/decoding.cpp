@@ -48,7 +48,8 @@ namespace decoding {
         std::vector<float> top_k_probs;
         float sum = 0.0f;
         for (int i = 0; i < k; ++i) {
-            float scaled_prob = std::pow(prob_and_index[i].first, 1/temperature); // Temperature scaling
+//            float scaled_prob = std::pow(prob_and_index[i].first, 1/temperature); // Temperature scaling
+            float scaled_prob = prob_and_index[i].first;
             top_k_probs.push_back(scaled_prob);
             sum += scaled_prob;
         }

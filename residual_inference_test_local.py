@@ -117,8 +117,12 @@ if __name__ == "__main__":
     # torch.manual_seed(0)
     #
     # # # load model to cpu
-    # model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=True)
-    # tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model_name = "szzzzz/chatbot_bloom_1b7"
+    model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    print(tokenizer.decode(
+        model.generate(**tokenizer("Tell me about California.", return_tensors="pt").to("cpu"), num_beams=5, max_new_tokens=30)[
+            0]))
     # split_size = max_split_size(model, transformer_model_option=True)
     #
     # # test module_flops
@@ -154,9 +158,11 @@ if __name__ == "__main__":
     #     print(f"Device{i} - to_merge_index: {arrangement_result[i][0]}, dynamic_index: {arrangement_result[i][1]}\n")
 
     #modelcard = ModelCard("vicuna7b", quantization_option=False)
-    modelcard = ModelCard("chat-bloom1b7", quantization_option=False)
-    mem_util, out_size_map, bytearray_path, flop_module_path, num_flop, module_flop_map, num_modules \
-        = modelcard.prepare_optimization_info()
+    # modelcard = ModelCard("bloom1b7", quantization_option=False)
+    # mem_util, out_size_map, bytearray_path, flop_module_path, num_flop, module_flop_map, num_modules \
+    #     = modelcard.prepare_optimization_info()
+
+
 
     ###### INFO REQUIRED FROM DEVICES TO SERVER (Monitor Part) ######
     # monitor = Monitor(15, "34567", 2)
