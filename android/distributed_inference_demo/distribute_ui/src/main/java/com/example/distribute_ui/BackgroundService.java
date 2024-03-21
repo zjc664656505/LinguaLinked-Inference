@@ -109,7 +109,7 @@ public class BackgroundService extends Service {
 
             // k is parameter for top-k
             // initial_temp is the parameter for temperature.
-            Config cfg = new Config(server_ip, 23456, 5, 0.7f);
+            Config cfg = new Config(server_ip, 23456, 7, 0.7f);
 
             Communication com = new Communication(cfg);
             Communication.loadBalance = new LoadBalance(com, cfg);
@@ -190,6 +190,7 @@ public class BackgroundService extends Service {
                     }
                 }
 
+                // TODO: Need to fix the repetitive generation issue
 
                 if (cfg.isHeader()) {
                     new Thread(() -> {
@@ -205,9 +206,8 @@ public class BackgroundService extends Service {
                             }else {
                                 System.out.println("New user input");
                                 System.out.println("***************" + messageContent);
-                                // TODO: Need to fix the repetitive generation issue
-                                String formattedContent = String.format("User: %s. Response:", messageContent); // format chat prompt
-                                userinput = formattedContent;
+                                messageContent = String.format("User: %s. Response:", messageContent); // format chat prompt
+                                userinput = messageContent;
                                 test_input.add(userinput);
                                 j++;
                             }

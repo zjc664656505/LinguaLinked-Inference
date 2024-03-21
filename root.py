@@ -250,7 +250,7 @@ if __name__ == "__main__":
     config = {"file_path": file_cfg,
               "num_sample": b'1000',
               "num_device": len(devices),
-              "max_length": b'30',
+              "max_length": b'40',
               "task_type": "generation".encode('utf-8'),
               "core_pool_size": b'1',
               "head_node": ip_graph[0],

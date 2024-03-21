@@ -3,6 +3,7 @@ import static com.example.distribute_ui.BackgroundService.TAG;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.junit.Test;
 import org.zeromq.ZMQ;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -501,11 +502,26 @@ public class Communication {
             } else {
                 // generation
                 int receivedId = sampleId;
+                int input_size = param.max_length;
+
                 for (int m = 0; m < param.max_length; m++) {
                     long startTime = System.nanoTime();
                     System.out.println("++++++++++++SampleID: " + sample_id + "++++++++++TokenID:" + m);
                     try {
                         receivedId = new OneStep(this.sample_id, serverSocket, clientSocket).run();
+
+                        if (cfg.isHeader()) {
+                            // Synchronize the decoded string in data-repo for UI - Junchen
+                            input_size = Math.min(input_size, InputIds.get(receivedId).size());
+                            System.out.println(input_size);
+                            System.out.println(InputIds.get(receivedId).size());
+                            ArrayList<Integer> decodeList = new ArrayList(InputIds.get(receivedId).subList(input_size-1, InputIds.get(receivedId).size()));
+                            String decodedString = decodeID(Utils.convertArrayListToIntArray(
+                                    Objects.requireNonNull(decodeList)), tokenizer);
+                            DataRepository.INSTANCE.updateDecodingString(decodedString);
+                            System.out.println("No." + receivedId + " Results Obtained");
+                        }
+
                     } catch (InterruptedException | JSONException e) {
                         throw new RuntimeException(e);
                     }
@@ -633,7 +649,6 @@ public class Communication {
         }
 
         public int obtainResultsFromTailer(int receivedId) {
-
             // Special for header to obtain results from tailer
             if (cfg.isHeader()) {
                 // Handle the case header to request tailer results
@@ -655,11 +670,6 @@ public class Communication {
                 } else {
                     logits.put(receivedId, res);
                 }
-                // Synchronize the decoded string in data-repo for UI - Junchen
-                String decodedString = decodeID(Utils.convertArrayListToIntArray(
-                        Objects.requireNonNull(InputIds.get(receivedId))), tokenizer);
-                DataRepository.INSTANCE.updateDecodingString(decodedString);
-                System.out.println("No." + receivedId + " Results Obtained");
             }
             return receivedId;
         }
